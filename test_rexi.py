@@ -12,15 +12,15 @@ f = Constant(1.0)
 g = Constant(1.0)
 H = Constant(1.0)
 
-ai = Constant(1.0)
-bi = Constant(1.0)
+ai = Constant(0.0)
+bi = Constant(0.0)
 ar = Constant(1.0)
 br = Constant(1.0)
 
 W = MixedFunctionSpace((V1,V2,V1,V2))
 
 u0 = Function(V1)
-h0 = Function(V2).interpolate(Expression("x[0]*x[1]*x[2]"))
+h0 = Function(V2).interpolate(Expression("1.0"))
 
 u1r, h1r, u1i, h1i = TrialFunctions(W)
 wr, phr, wi, phi = TestFunctions(W)
@@ -29,19 +29,19 @@ outward_normals = CellNormal(Mesh)
 perp = lambda u: cross(outward_normals, u)
 
 a = (
-    inner(wr,u1r)*ar + f*inner(wr,perp(u1r)) + g*div(wr)*h1r 
+    inner(wr,u1r)*ar + f*inner(wr,perp(u1r)) - g*div(wr)*h1r 
     - ai*inner(wr,u1i)
     + phr*(ai*h1r + H*div(u1r) - ar*h1i)
-    + inner(wi,u1i)*ar + f*inner(wi,perp(u1i)) + g*div(wi)*h1i 
+    + inner(wi,u1i)*ar + f*inner(wi,perp(u1i)) - g*div(wi)*h1i 
     + ai*inner(wi,u1r)
     + phi*(ai*h1i + H*div(u1i) + ar*h1r)
 )*dx
 
 L = (
     br*inner(wr,u0)*dx
-    + phr*h0*dx 
+    + br*phr*h0*dx 
     + bi*inner(wi,u0)*dx
-    + phi*h0*dx 
+    + bi*phi*h0*dx 
     )
 
 w = Function(W)
