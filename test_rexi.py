@@ -13,9 +13,9 @@ g = Constant(1.0)
 H = Constant(1.0)
 
 ai = Constant(1.0)
-bi = Constant(1.0)
+bi = Constant(100.0)
 ar = Constant(1.0)
-br = Constant(1.0)
+br = Constant(100.0)
 
 W = MixedFunctionSpace((V1,V2,V1,V2))
 
@@ -47,7 +47,7 @@ L = (
 w = Function(W)
 myprob = LinearVariationalProblem(a,L,w)
 
-block_solver_parameters = {"ksp_type": "gmres",
+block_lu_solver_parameters = {"ksp_type": "gmres",
                            "ksp_monitor": True,
                            "pc_type": "fieldsplit",
                            "mat_type": "aij",
@@ -60,7 +60,7 @@ block_solver_parameters = {"ksp_type": "gmres",
                            "fieldsplit_1_pc_type": "lu"}
 
 rexi_solver = LinearVariationalSolver(myprob,
-                                      solver_parameters=block_solver_parameters)
+                                      solver_parameters=block_lu_solver_parameters)
 
 rexi_solver.solve()
 
