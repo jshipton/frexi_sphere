@@ -318,54 +318,42 @@ class REXI:
 		return sum_re + 1j*sum_im;
 
 
-##################################################
-##################################################
-
-h = 0.2
-M = 32
 
 ##################################################
 ##################################################
+if __name__=="__main__":
 
+        h = 0.2
+        M = 32
 
-print("GaussianApproximation")
+        print("GaussianApproximation")
 
-g = GaussianApproximation()
-h = 1
-for x in range(0, 10):
-	a = g.evalGaussian(x, h)
-	b = g.approxGaussian(x, h)
+        g = GaussianApproximation()
+        h = 1
+        for x in range(0, 10):
+	        a = g.evalGaussian(x, h)
+	        b = g.approxGaussian(x, h)
 
-	print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
+	        print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
 
-##################################################
-##################################################
+        print("ExponentialApproximation")
+        ea = ExponentialApproximation(h, M)
 
-print()
+        for x in range(-int(h*M)+1, int(h*M)):
+	        a = ea.eval_e_ix(x)
+	        b = ea.approx_e_ix(x)
 
-print("ExponentialApproximation")
-ea = ExponentialApproximation(h, M)
+	        print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
 
-for x in range(-int(h*M)+1, int(h*M)):
-	a = ea.eval_e_ix(x)
-	b = ea.approx_e_ix(x)
+        print("REXI")
+        h = 0.2
+        M = 64
+        rexi = REXI(h, M)
 
-	print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
+        for x in range(-int(h*M)+1, int(h*M)):
+                a = rexi.eval_e_ix(x)
+	        b = rexi.approx_e_ix(x)
 
-##################################################
-##################################################
-
-print()
-
-print("REXI")
-h = 0.2
-M = 64
-rexi = REXI(h, M)
-
-for x in range(-int(h*M)+1, int(h*M)):
-	a = rexi.eval_e_ix(x)
-	b = rexi.approx_e_ix(x)
-
-	print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
+	        print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
 
 
