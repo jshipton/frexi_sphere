@@ -1,21 +1,51 @@
 from firedrake import *
 from rexi_coefficient_python import REXI
 
-Mesh = IcosahedralSphereMesh(radius=1.0, refinement_level=5, degree=1)
+from sw_setup import SetupShallowWater
 
-global_normal = Expression(("x[0]", "x[1]", "x[2]"))
-Mesh.init_cell_orientations(global_normal)
+import argparse
 
-V1 = FunctionSpace(Mesh,"BDM",1)
-V2 = FunctionSpace(Mesh,"DG",0)
+parser = argparse.ArgumentParser(description="setup shallow water solver")
+geometry = parser.add_mutually_exclusive_group()
+geometry.add_argument("--sphere", nargs=2, type=float)
+geometry.add_argument("--square", nargs=2, type=float)
+parser.add_argument("problem_name")
+parser.add_argument("t", type=float)
+parser.add_argument("h", type=float)
+parser.add_argument("M", type=int)
+parser.add_argument("--family", default="BDM")
+parser.add_argument("--degree", type=int, default=0)
+parser.add_argument("--direct_solve", action="store_true")
 
-f = Constant(1.0)
-g = Constant(9.8)
-H = Constant(1.0)
+args = parser.parse_args()
+print args
 
-h = 0.2
-M = 64
-rexi = REXI(h, M)
+if args.square is not None:
+    L = args.square[0]
+    n = int(args.square[1])
+    print "setting up square mesh of length %s with n %s"%(L, n)
+    mesh = PeriodicSquareMesh(n, n, args.square[0])
+    perp = lambda u: as_vector([-u[1], u[0]])
+elif args.sphere is not None:
+    R = args.sphere[1]
+    ref = int(args.sphere[0])
+    print "setting up sphere mesh with radius %s and refinement level %s"%(R, ref)
+    mesh = IcosahedralSphereMesh(radius=R, refinement_level=ref, degree=1)
+    global_normal = Expression(("x[0]", "x[1]", "x[2]"))
+    mesh.init_cell_orientations(global_normal)
+    outward_normals = CellNormal(mesh)
+    perp = lambda u: cross(outward_normals, u)
+else:
+    print "Geometry not recognised"
+
+setup = SetupShallowWater(mesh, args.family, args.degree, args.problem_name)
+
+f = setup.params.f
+g = setup.params.g
+H = setup.params.H
+
+dt = args.t
+rexi = REXI(args.h, args.M)
 
 ai = Constant(1.0)
 bi = Constant(100.0)
@@ -23,16 +53,15 @@ ar = Constant(1.0)
 br = Constant(100.0)
 dt = Constant(1.)
 
+V1 = setup.V1
+V2 = setup.V2
 W = MixedFunctionSpace((V1,V2,V1,V2))
 
-u0 = Function(V1)
-h0 = Function(V2).interpolate(Expression("1.0"))
+u0 = Function(V1).assign(setup.u0)
+h0 = Function(V2).assign(setup.h0)
 
 u1r, h1r, u1i, h1i = TrialFunctions(W)
 wr, phr, wi, phi = TestFunctions(W)
-
-outward_normals = CellNormal(Mesh)
-perp = lambda u: cross(outward_normals, u)
 
 a = (
     inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
@@ -53,20 +82,26 @@ L = (
 w = Function(W)
 myprob = LinearVariationalProblem(a,L,w)
 
-block_lu_solver_parameters = {"ksp_type": "gmres",
-                           "ksp_monitor": True,
-                           "pc_type": "fieldsplit",
-                           "mat_type": "aij",
-                           "pc_fieldsplit_type": "multiplicative",
-                           "pc_fieldsplit_0_fields": "0,1",
-                           "pc_fieldsplit_1_fields": "2,3",
-                           "fieldsplit_0_ksp_type": "preonly",
-                           "fieldsplit_1_ksp_type": "preonly",
-                           "fieldsplit_0_pc_type": "lu",
-                           "fieldsplit_1_pc_type": "lu"}
+if args.direct_solve:
+    solver_parameters = {'ksp_type':'preonly',
+                         'mat_type': 'aij',
+                         'pc_type':'lu',
+                         'pc_factor_mat_solver_package': 'mumps'}
+else:
+    solver_parameters = {"ksp_type": "gmres",
+                         "ksp_monitor": True,
+                         "pc_type": "fieldsplit",
+                         "mat_type": "aij",
+                         "pc_fieldsplit_type": "multiplicative",
+                         "pc_fieldsplit_0_fields": "0,1",
+                         "pc_fieldsplit_1_fields": "2,3",
+                         "fieldsplit_0_ksp_type": "preonly",
+                         "fieldsplit_1_ksp_type": "preonly",
+                         "fieldsplit_0_pc_type": "lu",
+                         "fieldsplit_1_pc_type": "lu"}
 
 rexi_solver = LinearVariationalSolver(myprob,
-                                      solver_parameters=block_lu_solver_parameters)
+                                      solver_parameters=solver_parameters)
 
 w_sum = Function(W)
 
