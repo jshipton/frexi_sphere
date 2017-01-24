@@ -1,7 +1,7 @@
 from firedrake import *
 from rexi_coefficient_python import REXI
 
-Mesh = IcosahedralSphereMesh(radius=1.0, refinement_level=3, degree=1)
+Mesh = IcosahedralSphereMesh(radius=1.0, refinement_level=5, degree=1)
 
 global_normal = Expression(("x[0]", "x[1]", "x[2]"))
 Mesh.init_cell_orientations(global_normal)
@@ -17,10 +17,10 @@ h = 0.2
 M = 64
 rexi = REXI(h, M)
 
-ai = Constant(0.0)
-bi = Constant(0.0)
+ai = Constant(1.0)
+bi = Constant(100.0)
 ar = Constant(1.0)
-br = Constant(1.0)
+br = Constant(100.0)
 dt = Constant(1.)
 
 W = MixedFunctionSpace((V1,V2,V1,V2))
@@ -53,13 +53,20 @@ L = (
 w = Function(W)
 myprob = LinearVariationalProblem(a,L,w)
 
-lu_solver_parameters = {'ksp_type':'preonly',
-                        'mat_type': 'aij',
-                        'pc_type':'lu',
-                        'pc_factor_mat_solver_package': 'mumps'}
+block_lu_solver_parameters = {"ksp_type": "gmres",
+                           "ksp_monitor": True,
+                           "pc_type": "fieldsplit",
+                           "mat_type": "aij",
+                           "pc_fieldsplit_type": "multiplicative",
+                           "pc_fieldsplit_0_fields": "0,1",
+                           "pc_fieldsplit_1_fields": "2,3",
+                           "fieldsplit_0_ksp_type": "preonly",
+                           "fieldsplit_1_ksp_type": "preonly",
+                           "fieldsplit_0_pc_type": "lu",
+                           "fieldsplit_1_pc_type": "lu"}
 
 rexi_solver = LinearVariationalSolver(myprob,
-                                      solver_parameters=lu_solver_parameters)
+                                      solver_parameters=block_lu_solver_parameters)
 
 w_sum = Function(W)
 
