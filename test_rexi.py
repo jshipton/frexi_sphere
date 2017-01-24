@@ -66,17 +66,17 @@ wr, phr, wi, phi = TestFunctions(W)
 a = (
     inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
     - ai*inner(wr,u1i)
-    + phr*(ai*h1r - dt*H*div(u1r) - ar*h1i)
-    + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
-    + ai*inner(wi,u1r)
-    + phi*(ai*h1i - dt*H*div(u1i) + ar*h1r)
+    + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
+    - inner(wi,u1i)*ar + dt*f*inner(wi,perp(u1i)) - dt*g*div(wi)*h1i 
+    - ai*inner(wi,u1r)
+    - phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
 )*dx
 
 L = (
     br*inner(wr,u0)*dx
     + br*phr*h0*dx 
-    + bi*inner(wi,u0)*dx
-    + bi*phi*h0*dx 
+    - bi*inner(wi,u0)*dx
+    - bi*phi*h0*dx 
     )
 
 w = Function(W)

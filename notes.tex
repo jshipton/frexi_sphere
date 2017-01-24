@@ -1,0 +1,91 @@
+\documentclass[14pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb,times}
+\def\MM#1{\boldsymbol{#1}}
+
+\title{How we do REXI}
+\author{J. Shipton and C. J. Cotter}
+
+\begin{document}
+
+We are solving a system of the form
+
+\begin{equation}
+U(t) = \mathcal{L}U.
+\end{equation}
+
+Using an exponential integrator the solution of this system is
+
+\begin{equation}
+U(t) = e^{(t-t_0)\mathcal{L}}U(t_0).
+\end{equation}
+
+We compute the matrix exponential using the rational approximation
+
+\begin{equation}
+  e^{\tau\mathcal{L}}U(t_0) \approx \Sigma_{n=-N}^N\beta_n(\tau\mathcal{L} + \alpha_n)^{-1}U(t_0),
+\end{equation}
+
+\noindent where $\tau = t-t_0$, $\alpha_n$, and $\beta_n$ are complex
+valued coefficiants given in Haut 2015, and computed using a python
+version of Martin Schreiber's code.
+
+For each $n$ we solve
+
+\begin{equation}\label{neqn}
+(\tau\mathcal{L} + \alpha_n)U_n = \beta_nU(t_0).
+\end{equation}
+
+For the linear shallow water system with constant $f$ we have
+
+\begin{equation}
+  \mathcal{L}U =
+  \begin{pmatrix}
+    -f\MM{u}^\perp - g\nabla h \\
+    -H\nabla\cdot\MM{u}
+  \end{pmatrix},
+\end{equation}
+
+\noindent so equation \ref{neqn} becomes
+
+\begin{align}
+  \tau(-f\MM{u_n}^\perp - g\nabla h_n) + \alpha_n\MM{u_n} &= \beta_n\MM{u_0}\\
+  \tau(-H\nabla\cdot\MM{u_n}) + \alpha_nh_n &= \beta_nh_0
+\end{align}
+
+The weak form is
+
+\begin{align}
+  -\tau f\langle\MM{w}, \MM{u_n}^\perp\rangle + \tau g\langle\nabla\cdot\MM{w}, h_n\rangle + \alpha_n\langle\MM{w}, \MM{u_n}\rangle &= \beta_n\langle\MM{w}, \MM{u_0}\rangle \label{weak u}\\
+  -\tau H\langle\phi, \nabla\cdot\MM{u_n}\rangle + \alpha_n\langle\phi, h_n\rangle &= \beta_n\langle\phi, h_0\rangle. \label{weak h}
+\end{align}
+
+Although $U(t_0)$ and the solution $U(t)$ are real valued, the complex
+valued coefficients require that we work with complex numbers. Since
+Firedrake does not yet have this capability, we write out the real and
+imaginary components ourselves:
+
+\begin{align}
+  \MM{w} &= \MM{w}^r + i\MM{w}^i, \\
+  \MM{u_n} &= \MM{u}_n^r + i\MM{u}_n^i
+\end{align}
+
+\noindent and likewise for $\phi$ and $h$ and the coeffiecients
+$\alpha_n$ and $\beta_n$. Writing this out and equating real parts of
+equations \ref{weak u}-\ref{weak h} gives
+
+\begin{align}
+  \begin{split}
+    -\tau f\big(\langle\MM{w}^r, \MM{u_n^r}^\perp\rangle - \langle\MM{w}^i, \MM{u_n^i}^\perp\rangle\big) \\
+  + \tau g\big(\langle\nabla\cdot\MM{w}^r, h_n^r\rangle - \langle\nabla\cdot\MM{w}^i, h_n^i\rangle\big) \\
+  + \alpha_n^r(\langle\MM{w}^r, \MM{u}_n^r\rangle - \langle\MM{w}^i, \MM{u}_n^i\rangle) \\
+  - \alpha_n^i(\langle\MM{w}^r, \MM{u}_n^i\rangle + \langle\MM{w}^i, \MM{u}_n^r\rangle) &= \beta_n^r\langle\MM{w}^r, \MM{u}_0\rangle - \beta_n^i\langle\MM{w}^i, \MM{u}_0\rangle
+  \end{split}\\
+  \begin{split}
+    -\tau H \big(\langle\phi^r, \nabla\cdot\MM{u}_n^r\rangle - \langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle\big) \\
+    +\alpha_n^r\big(\langle\phi^r, h_n^r\rangle - \langle\phi^i, h_n^i\rangle\big) \\
+    -\alpha_n^i\big(\langle\phi^r, h_n^i,\rangle + \langle\phi^i, h_n^r\rangle\big) &= \beta_n^r\langle\phi^r, h_n^r\rangle - \beta_n^i\langle\phi^i, h_n^i\rangle
+  \end{split}
+\end{align}
+
+\end{document}
