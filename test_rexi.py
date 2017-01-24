@@ -44,14 +44,13 @@ f = setup.params.f
 g = setup.params.g
 H = setup.params.H
 
-dt = args.t
+dt = Constant(args.t)
 rexi = REXI(args.h, args.M)
 
 ai = Constant(1.0)
 bi = Constant(100.0)
 ar = Constant(1.0)
 br = Constant(100.0)
-dt = Constant(1.)
 
 V1 = setup.V1
 V2 = setup.V2
