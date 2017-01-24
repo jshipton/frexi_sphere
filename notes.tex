@@ -66,7 +66,7 @@ Firedrake does not yet have this capability, we write out the real and
 imaginary components ourselves:
 
 \begin{align}
-  \MM{w} &= \MM{w}^r + i\MM{w}^i, \\
+  \MM{w} &= \MM{w}^r - i\MM{w}^i, \\
   \MM{u_n} &= \MM{u}_n^r + i\MM{u}_n^i
 \end{align}
 
@@ -76,16 +76,36 @@ equations \ref{weak u}-\ref{weak h} gives
 
 \begin{align}
   \begin{split}
-    -\tau f\big(\langle\MM{w}^r, \MM{u_n^r}^\perp\rangle - \langle\MM{w}^i, \MM{u_n^i}^\perp\rangle\big) \\
-  + \tau g\big(\langle\nabla\cdot\MM{w}^r, h_n^r\rangle - \langle\nabla\cdot\MM{w}^i, h_n^i\rangle\big) \\
-  + \alpha_n^r(\langle\MM{w}^r, \MM{u}_n^r\rangle - \langle\MM{w}^i, \MM{u}_n^i\rangle) \\
-  - \alpha_n^i(\langle\MM{w}^r, \MM{u}_n^i\rangle + \langle\MM{w}^i, \MM{u}_n^r\rangle) &= \beta_n^r\langle\MM{w}^r, \MM{u}_0\rangle - \beta_n^i\langle\MM{w}^i, \MM{u}_0\rangle
+    -\tau f\big(\langle\MM{w}^r, {\MM{u}_n^r}^\perp\rangle + \langle\MM{w}^i, {\MM{u}_n^i}^\perp\rangle\big) \\
+  + \tau g\big(\langle\nabla\cdot\MM{w}^r, h_n^r\rangle + \langle\nabla\cdot\MM{w}^i, h_n^i\rangle\big) \\
+  + \alpha_n^r(\langle\MM{w}^r, \MM{u}_n^r\rangle + \langle\MM{w}^i, \MM{u}_n^i\rangle) \\
+  - \alpha_n^i(\langle\MM{w}^r, \MM{u}_n^i\rangle - \langle\MM{w}^i, \MM{u}_n^r\rangle) &= \beta_n^r\langle\MM{w}^r, \MM{u}_0\rangle + \beta_n^i\langle\MM{w}^i, \MM{u}_0\rangle
   \end{split}\\
   \begin{split}
-    -\tau H \big(\langle\phi^r, \nabla\cdot\MM{u}_n^r\rangle - \langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle\big) \\
-    +\alpha_n^r\big(\langle\phi^r, h_n^r\rangle - \langle\phi^i, h_n^i\rangle\big) \\
-    -\alpha_n^i\big(\langle\phi^r, h_n^i,\rangle + \langle\phi^i, h_n^r\rangle\big) &= \beta_n^r\langle\phi^r, h_n^r\rangle - \beta_n^i\langle\phi^i, h_n^i\rangle
+    -\tau H \big(\langle\phi^r, \nabla\cdot\MM{u}_n^r\rangle + \langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle\big) \\
+    +\alpha_n^r\big(\langle\phi^r, h_n^r\rangle + \langle\phi^i, h_n^i\rangle\big) \\
+    -\alpha_n^i\big(\langle\phi^r, h_n^i,\rangle - \langle\phi^i, h_n^r\rangle\big) &= \beta_n^r\langle\phi^r, h_n^r\rangle + \beta_n^i\langle\phi^i, h_n^i\rangle
   \end{split}
 \end{align}
+
+Reassuringly, if we return to equation \ref{neqn} and equate real and
+imaginary parts before writing out the weak form, we obtain the same
+answer, as follows:
+
+\begin{align}
+  (\tau\mathcal{L} + \alpha_n^r)U_n^r - \alpha_n^iU_n^i &= \beta_n^rU_0, \\
+  (\tau\mathcal{L} + \alpha_n^r)U_n^i + \alpha_n^iU_n^r & = \beta_n^iU_0.
+\end{align}
+
+Now the weak form is
+
+\begin{align}
+  -\tau f\langle\MM{w}^r, {\MM{u}_n^r}^\perp\rangle + \tau g\langle\nabla\cdot\MM{w}^r, h_n^r\rangle + \alpha_n^r\langle\MM{w}^r, \MM{u}_n^r\rangle - \alpha_n^i\langle\MM{w}^r, \MM{u}_n^i\rangle &= \beta_n^r\langle\MM{w}^r, \MM{u}_0\rangle, \\
+  -\tau H\langle\phi^r, \nabla\cdot\MM{u}_n^r\rangle + \alpha_n^r\langle\phi^r, h^r\rangle - \alpha_n^i\langle\phi^r, h_n^i\rangle & = \beta_n^r \langle\phi^r, h_0\rangle, \\
+  -\tau f\langle\MM{w}^i, {\MM{u}_n^i}^\perp\rangle + \tau g\langle\nabla\cdot\MM{w}^i, h_n^i\rangle + \alpha_n^r\langle\MM{w}^i, \MM{u}_n^i\rangle + \alpha_n^i\langle\MM{w}^i, \MM{u}_n^r\rangle &= \beta_n^r\langle\MM{w}^i, \MM{u}_0\rangle, \\
+  -\tau H\langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle + \alpha_n^r\langle\phi^i, h^i\rangle + \alpha_n^i\langle\phi^i, h_n^r\rangle & = \beta_n^r \langle\phi^i, h_0\rangle,
+\end{align}
+
+\noindent as above.
 
 \end{document}
