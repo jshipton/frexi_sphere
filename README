@@ -1,0 +1,17 @@
+To run test_rexi you need to specify the geometry (and relevant
+parameters), the name of the setup (defined in sw_setup.py) which will
+specify the initial conditions, the time at which you wish to evaluate
+the solution and the REXI parameters h and M. You can also specify
+whether to run with a direct or block iterative solver.
+
+For example, to run the f plane wave test from Schreiber et. a. 2016, type:
+
+python --square 1. 128 wave_scenario 0.1 0.2 200
+
+This will set up a sqaure mesh of size 1. with 128 calls in each
+direction. u and h will be initialised with functions provided in the
+paper and specified in sw_setup.py. The remaining 3 parameters are t,
+the time to evaluate the solution, and the REXI parameters h and M.
+
+The default is to use the block iterative solver parameters, or you
+can specify --direct_solve.
