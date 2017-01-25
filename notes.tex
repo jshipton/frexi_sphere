@@ -1,6 +1,7 @@
 \documentclass[14pt]{article}
 \usepackage{amsmath}
 \usepackage{amssymb,times}
+\usepackage{graphicx}
 \def\MM#1{\boldsymbol{#1}}
 
 \title{How we do REXI}
@@ -107,5 +108,30 @@ Now the weak form is
 \end{align}
 
 \noindent as above.
+
+\section{Results}
+
+Below are some figures comparing results from the REXI solver to a
+standard implicit midpoint timestepping scheme. These were obtained
+using a spatial resolution of $128\times 128$ and with the REXI
+parameters $h=0.2$ and $M=256$. The initial condition is the wave
+scenario in Martin's 2016 paper and the fields are plotted at
+$t=0.001$. For the implicit midpoint solver $dt=0.001$ and for REXI
+$\tau=0.001$. These parameters should result in an error of around
+$10^{-4}$.
+
+Note that the agreement between the figures looks great until you look
+closely at the scales!
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.45\textwidth]{results/IM_h}
+  \includegraphics[width=0.45\textwidth]{results/REXI_h}\\
+  \includegraphics[width=0.45\textwidth]{results/IM_u}
+  \includegraphics[width=0.45\textwidth]{results/REXI_u}\\
+  \includegraphics[width=0.45\textwidth]{results/IM_v}
+  \includegraphics[width=0.45\textwidth]{results/REXI_v}
+\caption{h (top), u (middle) and v (bottom) at $t=0.001$. Implicit midpoint imestepping on the left, REXI on the right.}
+\end{figure}
 
 \end{document}
