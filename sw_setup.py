@@ -27,14 +27,16 @@ class ShallowWaterParameters(Configuration):
 class SetupShallowWater(object):
 
     """
-    initial conditions for linear shallow water
+    initial conditions and function spaces for linear shallow water
     """
     def __init__(self, mesh, family, degree, problem_name):
         self.mesh = mesh
-        self.V1 = FunctionSpace(mesh, family, degree+1)
-        self.V2 = FunctionSpace(mesh, "DG", degree)
-        self.u0 = Function(self.V1)
-        self.h0 = Function(self.V2)
+        V1 = FunctionSpace(mesh, family, degree+1)
+        V2 = FunctionSpace(mesh, "DG", degree)
+        self.spaces = {'u': V1, 'h': V2}
+
+        self.u0 = Function(self.spaces['u'])
+        self.h0 = Function(self.spaces['h'])
         setup = getattr(self, problem_name)
         setup()
 
