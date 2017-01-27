@@ -8,7 +8,7 @@ For example, to run the f plane wave test from Schreiber et. a. 2016, type:
 
 python test_rexi.py --square 1. 128 wave_scenario 0.1 0.2 200
 
-This will set up a square mesh of size 1. with 128 calls in each
+This will set up a square mesh of size 1. with 128 cells in each
 direction. u and h will be initialised with functions provided in the
 paper and specified in sw_setup.py. The remaining 3 parameters are t,
 the time to evaluate the solution, and the REXI parameters h and M.
