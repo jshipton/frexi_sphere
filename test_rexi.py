@@ -79,7 +79,7 @@ L = (
     )
 
 w = Function(W)
-myprob = LinearVariationalProblem(a,L,w)
+myprob = LinearVariationalProblem(a, L, w, constant_jacobian=False)
 
 if args.direct_solve:
     solver_parameters = {'ksp_type':'preonly',
