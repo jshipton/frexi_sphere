@@ -6,13 +6,14 @@ class RexiTimestep(object):
 
     def __init__(self, mesh, family, degree, problem_name, t):
 
+        self.problem_name = problem_name
         self.dt = Constant(t)
-        self.filename = 'rexi_'+problem_name+'_t'+str(t)+'.pvd'
 
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
 
     def run(self, h, M, direct_solve=False):
 
+        filename = 'rexi_'+self.problem_name+'_t'+str(t)+'_h'+str(h)+'_M'+str(M)+'.pvd'
         f = Constant(self.setup.params.f)
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
@@ -95,7 +96,7 @@ class RexiTimestep(object):
         self.h1r = Function(V2,name="h1r").assign(h1r_)
         h1i = Function(V2,name="h1i").assign(h1i_)
 
-        File(self.filename).write(self.u1r, self.h1r, u1i, h1i)
+        File(filename).write(self.u1r, self.h1r, u1i, h1i)
 
 if __name__=="__main__":
     import argparse
