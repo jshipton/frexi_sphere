@@ -40,9 +40,9 @@ else:
 
 setup = SetupShallowWater(mesh, args.family, args.degree, args.problem_name)
 
-f = setup.params.f
-g = setup.params.g
-H = setup.params.H
+f = Constant(setup.params.f)
+g = Constant(setup.params.g)
+H = Constant(setup.params.H)
 
 dt = Constant(args.t)
 rexi = REXI(args.h, args.M, i_reduce_to_half=False)
@@ -103,8 +103,8 @@ rexi_solver = LinearVariationalSolver(myprob,
                                       solver_parameters=solver_parameters)
 
 w_sum = Function(W)
-
-for i in range(len(rexi.alpha)):
+N = len(rexi.alpha)
+for i in range(N):
     ai.assign(rexi.alpha[i].imag)
     ar.assign(rexi.alpha[i].real)
     bi.assign(rexi.beta_re[i].imag)
@@ -112,7 +112,7 @@ for i in range(len(rexi.alpha)):
 
     rexi_solver.solve()
     _,hr,_,_ = w.split()
-    print i, hr.dat.data.min(), hr.dat.data.max() 
+    print i, ai.dat.data[0], ar.dat.data[0], bi.dat.data[0], br.dat.data[0], hr.dat.data.min(), hr.dat.data.max() 
     w_sum += w
 
 u1r_,h1r_,u1i_,h1i_ = w_sum.split()
