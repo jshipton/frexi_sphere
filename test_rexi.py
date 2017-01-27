@@ -45,7 +45,7 @@ g = setup.params.g
 H = setup.params.H
 
 dt = Constant(args.t)
-rexi = REXI(args.h, args.M)
+rexi = REXI(args.h, args.M, i_reduce_to_half=False)
 
 ai = Constant(1.0)
 bi = Constant(100.0)
@@ -111,6 +111,8 @@ for i in range(len(rexi.alpha)):
     br.assign(rexi.beta_re[i].real)
 
     rexi_solver.solve()
+    _,hr,_,_ = w.split()
+    print i, hr.dat.data.min(), hr.dat.data.max() 
     w_sum += w
 
 u1r_,h1r_,u1i_,h1i_ = w_sum.split()
