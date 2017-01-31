@@ -1,4 +1,4 @@
-from frexi_sphere import REXIParameters, REXI, b_coefficients
+from frexi_sphere.rexi import REXIParameters, REXI, b_coefficients
 from cmath import exp, sqrt, pi
 import pytest
 

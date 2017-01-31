@@ -1,12 +1,13 @@
 from firedrake import *
+from os import path
 from sw_setup import SetupShallowWater
 
 class ImplicitMidpointLinearSWSolver(object):
 
-    def __init__(self, mesh, family, degree, problem_name, dt):
+    def __init__(self, mesh, family, degree, problem_name, dt, dirname='results'):
 
         self.dt = dt
-        self.filename = 'imsolve_dt'+str(dt)+'.pvd'
+        self.filename = path.join(dirname, 'imsolve_dt'+str(dt)+'.pvd')
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
 
     def run(self, tmax):

@@ -1,11 +1,13 @@
 from firedrake import *
+from os import path
 from rexi_coefficients import REXI
 from sw_setup import SetupShallowWater
 
 class RexiTimestep(object):
 
-    def __init__(self, mesh, family, degree, problem_name, t):
+    def __init__(self, mesh, family, degree, problem_name, t, dirname='results'):
 
+        self.dirname = dirname
         self.problem_name = problem_name
         self.dt = Constant(t)
 
@@ -13,7 +15,7 @@ class RexiTimestep(object):
 
     def run(self, h, M, direct_solve=False):
 
-        filename = 'rexi_'+self.problem_name+'_t'+str(self.dt)+'_h'+str(h)+'_M'+str(M)+'.pvd'
+        filename = path.join(self.dirname, 'rexi_'+self.problem_name+'_t'+str(self.dt)+'_h'+str(h)+'_M'+str(M)+'.pvd')
         f = Constant(self.setup.params.f)
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
