@@ -59,11 +59,7 @@ class GaussianApproximation:
 	    -1.0816457995911385e-7 + 1j*-2.954309729192276e-8
 	]
 
-    def evalGaussian(	
-	    self,
-	    x,		# x-coefficient for Gaussian basis function
-	    h		# h-coefficient for Gaussian basis function
-    ):
+    def evalGaussian(self, x, h):
 	return math.exp(-(x*x)/(4.0*h*h))/math.sqrt(4.0*math.pi)
 
 
@@ -71,11 +67,7 @@ class GaussianApproximation:
 	evaluate approximation of Gaussian basis function
 	with sum of complex rational functions
 	"""
-    def approxGaussian(	
-	    self,
-	    x,		# x-coefficient for Gaussian basis function
-	    h		# h-coefficient for Gaussian basis function
-    ):
+    def approxGaussian(self, x, h):
 	# scale x, since it depends linearly on h:
 	# x^2 ~ h^2
 	x /= h
@@ -114,11 +106,7 @@ class GaussianApproximation:
 #
 class ExponentialApproximation:
 
-    def __init__(
-	    self,
-	    i_h,
-	    i_M
-    ):
+    def __init__(self, i_h, i_M ):
 	self.ga = GaussianApproximation()
 
 	self.h = i_h
@@ -188,17 +176,11 @@ class ExponentialApproximation:
 
 	self.b = [math.exp(self.h*self.h)*cmath.exp(-1j*(float(m)*self.h)) for m in range(-self.M, self.M+1)]
 
-    def eval_e_ix(
-	    self,
-	    i_x
-    ):
+    def eval_e_ix(self, i_x):
 	return cmath.exp(1j*i_x)
 
 
-    def approx_e_ix(
-	    self,
-	    i_x
-    ):
+    def approx_e_ix(self, i_x):
 	sum = 0
 
 	# \f$ \sum_{m=-M}^{M}{b_m \psi_h(x+m*h)} \f$
@@ -210,12 +192,7 @@ class ExponentialApproximation:
 
 class REXI:
 	
-    def __init__(
-	    self,
-	    i_h,
-	    i_M,
-	    i_reduce_to_half = True
-    ):
+    def __init__(self, i_h, i_M, i_reduce_to_half = False):
 	self.ga = GaussianApproximation();
 	self.ea = ExponentialApproximation(i_h, i_M);
 
@@ -294,42 +271,3 @@ class REXI:
 	    sum_im += (self.beta_im[n] / denom).real
 
 	return sum_re + 1j*sum_im;
-
-##################################################
-##################################################
-if __name__=="__main__":
-
-    h = 0.2
-    M = 32
-
-    print("GaussianApproximation")
-
-    g = GaussianApproximation()
-    h = 1
-    for x in range(0, 10):
-	a = g.evalGaussian(x, h)
-	b = g.approxGaussian(x, h)
-
-	print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
-
-    print("ExponentialApproximation")
-    ea = ExponentialApproximation(h, M)
-
-    for x in range(-int(h*M)+1, int(h*M)):
-	a = ea.eval_e_ix(x)
-	b = ea.approx_e_ix(x)
-
-	print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
-
-    print("REXI")
-    h = 0.2
-    M = 64
-    rexi = REXI(h, M)
-
-    for x in range(-int(h*M)+1, int(h*M)):
-        a = rexi.eval_e_ix(x)
-	b = rexi.approx_e_ix(x)
-
-	print(str(a)+"\t"+str(b)+"\t"+str(abs(a-b)))
-
-
