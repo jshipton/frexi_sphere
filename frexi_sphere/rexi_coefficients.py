@@ -59,15 +59,11 @@ class GaussianApproximation:
 	    -1.0816457995911385e-7 + 1j*-2.954309729192276e-8
 	]
 
-    def evalGaussian(self, x, h):
-	return math.exp(-(x*x)/(4.0*h*h))/math.sqrt(4.0*math.pi)
-
-
+    def approxGaussian(self, x, h):
 	"""
 	evaluate approximation of Gaussian basis function
 	with sum of complex rational functions
 	"""
-    def approxGaussian(self, x, h):
 	# scale x, since it depends linearly on h:
 	# x^2 ~ h^2
 	x /= h
@@ -176,10 +172,6 @@ class ExponentialApproximation:
 
 	self.b = [math.exp(self.h*self.h)*cmath.exp(-1j*(float(m)*self.h)) for m in range(-self.M, self.M+1)]
 
-    def eval_e_ix(self, i_x):
-	return cmath.exp(1j*i_x)
-
-
     def approx_e_ix(self, i_x):
 	sum = 0
 
@@ -249,15 +241,6 @@ class REXI:
 		self.beta_re[i] *= 2.0
 		self.beta_im[i] *= 2.0
 
-	#	
-	# \return \f$ cos(x) + i*sin(x) \f$
-	#
-    def eval_e_ix(self, i_x):
-	return cmath.exp(1j*i_x)
-
-	#
-	# approx
-	#
     def approx_e_ix(self, i_x):
 	sum_re = 0;
 	sum_im = 0;
