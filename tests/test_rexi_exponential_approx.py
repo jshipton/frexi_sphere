@@ -1,4 +1,4 @@
-from rexi_coefficient_python import ExponentialApproximation
+from frexi_sphere import ExponentialApproximation
 import pytest
 
 def test_exponential_approx():

@@ -1,4 +1,4 @@
-from rexi_coefficient_python import GaussianApproximation
+from frexi_sphere import GaussianApproximation
 import pytest
 
 def test_rexi_gaussian_approx():

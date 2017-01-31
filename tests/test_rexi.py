@@ -1,4 +1,4 @@
-from rexi_coefficient_python import REXI
+from frexi_sphere import REXI
 import pytest
 
 def test_rexi():
