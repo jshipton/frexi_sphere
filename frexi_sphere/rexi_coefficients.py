@@ -23,62 +23,100 @@ import cmath
 # See e.g. Near optimal rational approximations of large data sets, Damle et. al.
 #
 
-class GaussianApproximation:
+class REXIParameters(object):
 
-    def __init__(self):
-        """	
-        mu and a coefficients from
-	"A high-order time-parallel scheme for solving wave propagation problems via the direct construction of an approximate time-evolution operator", Haut et.al.
-	"""
+    """	
+    mu and a coefficients from
+    "A high-order time-parallel scheme for solving wave propagation problems via the direct construction of an approximate time-evolution operator", Haut et.al.
+    """
 
-	self.mu = -4.315321510875024 + 1j*0
-	self.L = 11
-	self.a = [
-            -1.0845749544592896e-7 + 1j*2.77075431662228e-8,
-            1.858753344202957e-8 + 1j*-9.105375434750162e-7,
-            3.6743713227243024e-6 + 1j*7.073284346322969e-7,
-            -2.7990058083347696e-6 + 1j*0.0000112564827639346,
-	    0.000014918577548849352 + 1j*-0.0000316278486761932,
-	    -0.0010751767283285608 + 1j*-0.00047282220513073084,
-	    0.003816465653840016 + 1j*0.017839810396560574,
-	    0.12124105653274578 + 1j*-0.12327042473830248,
-	    -0.9774980792734348 + 1j*-0.1877130220537587,
-	    1.3432866123333178 + 1j*3.2034715228495942,
-	    4.072408546157305 + 1j*-6.123755543580666,
-	    -9.442699917778205 + 1j*0.,
-	    4.072408620272648 + 1j*6.123755841848161,
-	    1.3432860877712938 + 1j*-3.2034712658530275,
-	    -0.9774985292598916 + 1j*0.18771238018072134,
-	    0.1212417070363373 + 1j*0.12326987628935386,
-	    0.0038169724770333343 + 1j*-0.017839242222443888,
-	    -0.0010756025812659208 + 1j*0.0004731874917343858,
-	    0.000014713754789095218 + 1j*0.000031358475831136815,
-	    -2.659323898804944e-6 + 1j*-0.000011341571201752273,
-	    3.6970377676364553e-6 + 1j*-6.517457477594937e-7,
-	    3.883933649142257e-9 + 1j*9.128496023863376e-7,
-	    -1.0816457995911385e-7 + 1j*-2.954309729192276e-8
-	]
+    mu = -4.315321510875024 + 1j*0
+    L = 11
+    a = [
+        -1.0845749544592896e-7 + 1j*2.77075431662228e-8,
+        1.858753344202957e-8 + 1j*-9.105375434750162e-7,
+        3.6743713227243024e-6 + 1j*7.073284346322969e-7,
+        -2.7990058083347696e-6 + 1j*0.0000112564827639346,
+	0.000014918577548849352 + 1j*-0.0000316278486761932,
+	-0.0010751767283285608 + 1j*-0.00047282220513073084,
+	0.003816465653840016 + 1j*0.017839810396560574,
+	0.12124105653274578 + 1j*-0.12327042473830248,
+	-0.9774980792734348 + 1j*-0.1877130220537587,
+	1.3432866123333178 + 1j*3.2034715228495942,
+	4.072408546157305 + 1j*-6.123755543580666,
+	-9.442699917778205 + 1j*0.,
+	4.072408620272648 + 1j*6.123755841848161,
+	1.3432860877712938 + 1j*-3.2034712658530275,
+	-0.9774985292598916 + 1j*0.18771238018072134,
+	0.1212417070363373 + 1j*0.12326987628935386,
+	0.0038169724770333343 + 1j*-0.017839242222443888,
+	-0.0010756025812659208 + 1j*0.0004731874917343858,
+	0.000014713754789095218 + 1j*0.000031358475831136815,
+	-2.659323898804944e-6 + 1j*-0.000011341571201752273,
+	3.6970377676364553e-6 + 1j*-6.517457477594937e-7,
+	3.883933649142257e-9 + 1j*9.128496023863376e-7,
+	-1.0816457995911385e-7 + 1j*-2.954309729192276e-8
+    ]
 
-    def approxGaussian(self, x, h):
-	"""
-	evaluate approximation of Gaussian basis function
-	with sum of complex rational functions
-	"""
-	# scale x, since it depends linearly on h:
-	# x^2 ~ h^2
-	x /= h
+def b_coefficients(h, M):
+    return [math.exp(h*h)*cmath.exp(-1j*(float(m)*h)) for m in range(-M, M+1)]
 
-	sum = 0
+def REXI(h, M, reduce_to_half = False):
 
-	for l in range(0, len(self.a)):
-	    j = l-self.L
+    params = REXIParameters()
+    L = params.L
+    mu = params.mu
+    a = params.a
+    b = b_coefficients(h, M)
+    N = M + L
 
-	    # WORKS with max error 7.15344e-13
-	    sum += (self.a[l]/(1j*x + self.mu + 1j*j)).real
+    alpha = [0 for i in range(0, 2*N+1)]
+    beta_re = [0 for i in range(0, 2*N+1)]
+    beta_im = [0 for i in range(0, 2*N+1)]
 
-	return sum
+    for l in range(-L, L+1):
+	for m in range(-M, M+1):
+	    n = l+m
+	    alpha[n+N] = h*(mu + 1j*n);
+	    beta_re[n+N] += b[m+M].real*h*a[l+L];
+	    beta_im[n+N] += b[m+M].imag*h*a[l+L];
 
-#
+    #for (int n = -N; n < N+1; n++)
+    #{
+    #	alpha[n+N] = i_h*(ga.mu + complex(0, n));
+    #
+    #	int L1 = std::max(-L, n-M);
+    #	int L2 = std::min(L, n+M);
+    #
+    #	beta_re[n+N] = 0;
+    #	for (int k = L1; k < L2; k++)
+    #	{
+    #		assert(k+L >= 0);
+    #		assert(k+L < 2*L+1);
+    #		assert(n-k+M >= 0);
+    #		assert(n-k+M < 2*M+1);
+    #
+    #		beta_re[n+N] += ga.a[k+L]*ea.b[n-k+M].real();
+    #	}
+    #
+    #	beta_re[n+N] *= i_h;
+    #}
+
+    if reduce_to_half:
+	# reduce the computational amount to its half,
+	# see understanding REXI in the documentation folder
+
+	alpha = alpha[:N+1]
+	beta_re = beta_re[:N+1]
+	beta_im = beta_im[:N+1]
+
+	# N+1 contains the pole and we don't rescale this one by 2 but all the other ones
+	for i in range(0, N):
+	    beta_re[i] *= 2.0
+	    beta_im[i] *= 2.0
+
+    return alpha, beta_re, beta_im
+
 # This class computes an approximation of an exponential \f$ e^{ix} \f$ by
 # a combination of Gaussians.
 #
@@ -100,13 +138,6 @@ class GaussianApproximation:
 #
 # with F and \f$ \psi \f$ the functions f and \f$ \psi \f$ in Fourier space
 #
-class ExponentialApproximation:
-
-    def __init__(self, i_h, i_M ):
-	self.ga = GaussianApproximation()
-
-	self.h = i_h
-	self.M = i_M
 
 	#
 	# See Section 3.1 for approx. of general function
@@ -169,88 +200,3 @@ class ExponentialApproximation:
 	#
 	# Let's hope, that these equations are right.
 	#
-
-	self.b = [math.exp(self.h*self.h)*cmath.exp(-1j*(float(m)*self.h)) for m in range(-self.M, self.M+1)]
-
-    def approx_e_ix(self, i_x):
-	sum = 0
-
-	# \f$ \sum_{m=-M}^{M}{b_m \psi_h(x+m*h)} \f$
-	for m in range(-self.M, self.M+1):
-	    sum += self.b[m+self.M] * self.ga.approxGaussian(i_x+float(m)*self.h, self.h)
-
-	return sum
-
-
-class REXI:
-	
-    def __init__(self, i_h, i_M, i_reduce_to_half = False):
-	self.ga = GaussianApproximation();
-	self.ea = ExponentialApproximation(i_h, i_M);
-
-	self.L = self.ga.L;
-	self.N = i_M+self.ga.L;
-	self.M = i_M;
-
-	M = self.M
-	N = self.N
-	L = self.L
-
-	self.alpha = [0 for i in range(0, 2*self.N+1)]
-	self.beta_re = [0 for i in range(0, 2*self.N+1)]
-	self.beta_im = [0 for i in range(0, 2*self.N+1)]
-
-	for l in range(-self.L, L+1):
-	    for m in range(-M, M+1):
-		n = l+m;
-		self.alpha[n+N] = i_h*(self.ga.mu + 1j*n);
-		self.beta_re[n+N] += self.ea.b[m+M].real*i_h*self.ga.a[l+L];
-		self.beta_im[n+N] += self.ea.b[m+M].imag*i_h*self.ga.a[l+L];
-
-	    #for (int n = -N; n < N+1; n++)
-	    #{
-	    #	alpha[n+N] = i_h*(ga.mu + complex(0, n));
-	    #
-	    #	int L1 = std::max(-L, n-M);
-	    #	int L2 = std::min(L, n+M);
-	    #
-	    #	beta_re[n+N] = 0;
-	    #	for (int k = L1; k < L2; k++)
-	    #	{
-	    #		assert(k+L >= 0);
-	    #		assert(k+L < 2*L+1);
-	    #		assert(n-k+M >= 0);
-	    #		assert(n-k+M < 2*M+1);
-	    #
-	    #		beta_re[n+N] += ga.a[k+L]*ea.b[n-k+M].real();
-	    #	}
-	    #
-	    #	beta_re[n+N] *= i_h;
-	    #}
-
-	if i_reduce_to_half:
-	    # reduce the computational amount to its half,
-	    # see understanding REXI in the documentation folder
-
-	    self.alpha = self.alpha[:N+1]
-	    self.beta_re = self.beta_re[:N+1]
-	    self.beta_im = self.beta_im[:N+1]
-
-	    # N+1 contains the pole and we don't rescale this one by 2 but all the other ones
-	    for i in range(0, N):
-		self.beta_re[i] *= 2.0
-		self.beta_im[i] *= 2.0
-
-    def approx_e_ix(self, i_x):
-	sum_re = 0;
-	sum_im = 0;
-
-	S = len(self.alpha)
-
-	# Split computation into real part of \f$ cos(x) \f$ and imaginary part \f$ sin(x) \f$
-	for n in range(0, S):
-	    denom = (1j*i_x + self.alpha[n]);
-	    sum_re += (self.beta_re[n] / denom).real
-	    sum_im += (self.beta_im[n] / denom).real
-
-	return sum_re + 1j*sum_im;

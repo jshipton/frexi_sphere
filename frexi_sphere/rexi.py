@@ -1,5 +1,5 @@
 from firedrake import *
-from rexi_coefficient_python import REXI
+from rexi_coefficients import REXI
 from sw_setup import SetupShallowWater
 
 class RexiTimestep(object):
@@ -13,13 +13,13 @@ class RexiTimestep(object):
 
     def run(self, h, M, direct_solve=False):
 
-        filename = 'rexi_'+self.problem_name+'_t'+str(t)+'_h'+str(h)+'_M'+str(M)+'.pvd'
+        filename = 'rexi_'+self.problem_name+'_t'+str(self.dt)+'_h'+str(h)+'_M'+str(M)+'.pvd'
         f = Constant(self.setup.params.f)
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
         dt = self.dt
 
-        rexi = REXI(h, M, i_reduce_to_half=False)
+        alpha, beta_re, beta_im = REXI(h, M, reduce_to_half=False)
 
         ai = Constant(1.0)
         bi = Constant(100.0)
@@ -77,12 +77,12 @@ class RexiTimestep(object):
                                               solver_parameters=solver_parameters)
 
         w_sum = Function(W)
-        N = len(rexi.alpha)
+        N = len(alpha)
         for i in range(N):
-            ai.assign(rexi.alpha[i].imag)
-            ar.assign(rexi.alpha[i].real)
-            bi.assign(rexi.beta_re[i].imag)
-            br.assign(rexi.beta_re[i].real)
+            ai.assign(alpha[i].imag)
+            ar.assign(alpha[i].real)
+            bi.assign(beta_re[i].imag)
+            br.assign(beta_re[i].real)
 
             rexi_solver.solve()
             _,hr,_,_ = w.split()
