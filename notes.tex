@@ -3,6 +3,9 @@
 \usepackage{amssymb,times}
 \usepackage{graphicx}
 \def\MM#1{\boldsymbol{#1}}
+\DeclareMathOperator{\diff}{d\!}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator{\erf}{erf}
 
 \title{How we do REXI}
 \author{J. Shipton and C. J. Cotter}
@@ -133,4 +136,33 @@ Note that the agreement between the figures looks great (now that we're recreati
 \caption{h (top), u (middle) and v (bottom) at $t=0.1$. Implicit midpoint imestepping on the left, REXI on the right.}
 \end{figure}
 
+\section{Nonlinear terms}
+
+\begin{equation}
+  \phi_1(x) = \frac{e^{i x}-1}{i x}
+\end{equation}
+
+\begin{align}
+  \hat{\phi}_1(\xi) &=-i\int_{-\infty}^{\infty} e^{2\pi i x\xi}\frac{e^{i x}-1}{x}\diff x\\
+  &= -\pi(\sgn(h) - \sgn(2\pi h + 1)) \\
+  &= \begin{cases}
+    2\pi & \mathrm{for} -\frac{1}{2\pi} \leq \xi \leq 0, \\
+    0 & \mathrm{otherwise}.
+    \end{cases}
+\end{align}
+
+\begin{equation}
+  \frac{\hat{\phi}_1(\xi)}{\hat{\psi}_h(\xi)} = \sum_{m=-\infty}^{\infty}b_me^{2\pi i m h\xi},
+\end{equation}
+
+\noindent where
+
+\begin{align}
+  b_m &= h\int_{-\frac{1}{2h}}^{\frac{1}{2h}} e^{-2\pi i m h \xi}\frac{\hat{\phi}_1(\xi)}{\hat{\psi}_h(\xi)} \diff\xi, \\
+  &= 2\pi\int_{\max(-\frac{1}{2h}, -\frac{1}{2\pi})}^{0} e^{-2\pi i m h \xi}e^{4\pi^2\xi^2h^2} \diff\xi, \\
+  &= 2\pi e^{\frac{m^2}{4}}\int_{\max(-\frac{1}{2h}, -\frac{1}{2\pi})}^{0} e^{(2\pi h \xi - \frac{i m}{2})^2} \diff\xi, \\
+  &= \frac{e^\frac{m^2}{4}}{2h}\sqrt{\pi}i\Bigg(\erf\Big(\frac{i}{2}(4\pi h b - m)\Big) - \erf\Big(-\frac{i m}{2}\Big)\Bigg),
+\end{align}
+
+\noindent where $b=\max(-\frac{1}{2h}, -\frac{1}{2\pi})$.
 \end{document}

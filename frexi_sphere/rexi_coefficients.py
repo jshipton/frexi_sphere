@@ -58,8 +58,25 @@ class REXIParameters(object):
 	-1.0816457995911385e-7 + 1j*-2.954309729192276e-8
     ]
 
-def b_coefficients(h, M):
-    return [math.exp(h*h)*cmath.exp(-1j*(float(m)*h)) for m in range(-M, M+1)]
+def b_coefficients(h, M, n=0):
+    if n == 0:
+        return [math.exp(h*h)*cmath.exp(-1j*(float(m)*h)) for m in range(-M, M+1)]
+    elif n == 1:
+        from scipy import pi, cos, sin, exp, integrate
+        def expr_real(xi):
+            return cos(2*pi*m*h*xi)*exp(4*pi**2*xi**2*h**2)
+        def expr_imag(xi):
+            return sin(2*pi*m*h*xi)*exp(4*pi**2*xi**2*h**2)
+        b = []
+        for m in range(-M, M+1):
+            re, err= integrate.quadrature(expr_real, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
+            assert(err < 1.e-10)
+            im, err = integrate.quadrature(expr_imag, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
+            assert(err < 1.e-10)
+            b.append(2*pi*(re + 1j*im))
+        return b
+    else:
+        print "n must be 0 or 1"
 
 def REXI(h, M, reduce_to_half = False):
 
