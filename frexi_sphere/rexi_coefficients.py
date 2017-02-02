@@ -70,21 +70,19 @@ def b_coefficients(h, M, n=0):
         b = []
         for m in range(-M, M+1):
             re, err= integrate.quadrature(expr_real, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
-            assert(err < 1.e-10)
             im, err = integrate.quadrature(expr_imag, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
-            assert(err < 1.e-10)
             b.append(2*pi*(re + 1j*im))
         return b
     else:
         print "n must be 0 or 1"
 
-def REXI(h, M, reduce_to_half = False):
+def REXI(h, M, n=0, reduce_to_half = False):
 
     params = REXIParameters()
     L = params.L
     mu = params.mu
     a = params.a
-    b = b_coefficients(h, M)
+    b = b_coefficients(h, M, n)
     N = M + L
 
     alpha = [0 for i in range(0, 2*N+1)]
