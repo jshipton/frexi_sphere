@@ -16,11 +16,11 @@ def run(dirname, prob):
 
     dt = 0.01
 
-    im = ImplicitMidpointLinearSWSolver(mesh, family, degree, prob, dt, dirname)
+    im = ImplicitMidpointLinearSWSolver(mesh, family, degree, prob, dt, dirname=dirname)
     im.run(t)
     im_h = im.h_end
     im_u = im.u_end
-    r = RexiTimestep(mesh, family, degree, prob, t, dirname)
+    r = RexiTimestep(mesh, family, degree, prob, t, dirname=dirname)
     r.run(h, M, True)
     rexi_h = r.h1r
     rexi_u = r.u1r
