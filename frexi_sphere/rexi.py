@@ -9,17 +9,17 @@ class RexiTimestep(object):
 
         self.dirname = dirname
         self.problem_name = problem_name
-        self.dt = Constant(t)
+        self.dt = t
 
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
 
     def run(self, h, M, direct_solve=False):
 
         filename = path.join(self.dirname, 'rexi_'+self.problem_name+'_t'+str(self.dt)+'_h'+str(h)+'_M'+str(M)+'.pvd')
-        f = Constant(self.setup.params.f)
+        f = self.setup.params.f
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
-        dt = self.dt
+        dt = Constant(self.dt)
 
         alpha, beta_re, beta_im = REXI(h, M, reduce_to_half=False)
 

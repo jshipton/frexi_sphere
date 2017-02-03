@@ -7,12 +7,12 @@ class ImplicitMidpointLinearSWSolver(object):
     def __init__(self, mesh, family, degree, problem_name, dt, dirname='results'):
 
         self.dt = dt
-        self.filename = path.join(dirname, 'imsolve_dt'+str(dt)+'.pvd')
+        self.filename = path.join(dirname, 'imsolve_dt'+str(dt)+problem_name+'.pvd')
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
 
     def run(self, tmax):
 
-        f = Constant(self.setup.params.f)
+        f = self.setup.params.f
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
         dt = self.dt
@@ -57,6 +57,7 @@ class ImplicitMidpointLinearSWSolver(object):
             print "t = ", t, "energy = ", assemble(0.5*(inner(u1, u1) + g*H*h1*h1)*dx)
             solver.solve()
             u1, h1 = uh1.split()
+            outfile.write(u1, h1)
 
             t += dt
 
