@@ -5,11 +5,12 @@ from sw_setup import SetupShallowWater
 
 class RexiTimestep(object):
 
-    def __init__(self, mesh, family, degree, problem_name, t, dirname='results'):
+    def __init__(self, mesh, family, degree, problem_name, t, outward_normals=None, dirname='results'):
 
         self.dirname = dirname
         self.problem_name = problem_name
         self.dt = t
+        self.outward_normals = outward_normals
 
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
 
@@ -20,6 +21,10 @@ class RexiTimestep(object):
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
         dt = Constant(self.dt)
+        if self.outward_normals is not None:
+            perp = lambda u: cross(self.outward_normals, u)
+        else:
+            perp = lambda u: as_vector([-u[1], u[0]])
 
         alpha, beta_re, beta_im = REXI(h, M, reduce_to_half=False)
 
@@ -101,39 +106,13 @@ class RexiTimestep(object):
         File(filename).write(self.u1r, self.h1r, u1i, h1i)
 
 if __name__=="__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="setup shallow water solver")
-    geometry = parser.add_mutually_exclusive_group()
-    geometry.add_argument("--sphere", nargs=2, type=float)
-    geometry.add_argument("--square", nargs=2, type=float)
-    parser.add_argument("problem_name")
-    parser.add_argument("t", type=float)
-    parser.add_argument("h", type=float)
-    parser.add_argument("M", type=int)
-    parser.add_argument("--family", default="BDM")
-    parser.add_argument("--degree", type=int, default=0)
-    parser.add_argument("--direct_solve", action="store_true")
-
-    args = parser.parse_args()
-    print args
-    if args.square is not None:
-        L = args.square[0]
-        n = int(args.square[1])
-        print "setting up square mesh of length %s with n %s"%(L, n)
-        mesh = PeriodicSquareMesh(n, n, args.square[0])
-        perp = lambda u: as_vector([-u[1], u[0]])
-    elif args.sphere is not None:
-        R = args.sphere[1]
-        ref = int(args.sphere[0])
-        print "setting up sphere mesh with radius %s and refinement level %s"%(R, ref)
-        mesh = IcosahedralSphereMesh(radius=R, refinement_level=ref, degree=1)
-        global_normal = Expression(("x[0]", "x[1]", "x[2]"))
-        mesh.init_cell_orientations(global_normal)
-        outward_normals = CellNormal(mesh)
-        perp = lambda u: cross(outward_normals, u)
-    else:
-        print "Geometry not recognised"
-
-    r = RexiTimestep(mesh, args.family, args.degree, args.problem_name, args.t)
+    from input_parsing import RexiArgparser
+    rargs = RexiArgparser()
+    mesh = rargs.mesh
+    try:
+        outward_normals = rargs.outward_normals
+    except AttributeError:
+        outward_normals = None
+    args = rargs.args
+    r = RexiTimestep(mesh, args.family, args.degree, args.problem_name, args.t, outward_normals=outward_normals)
     r.run(args.h, args.M, args.direct_solve)

@@ -4,10 +4,11 @@ from sw_setup import SetupShallowWater
 
 class ImplicitMidpointLinearSWSolver(object):
 
-    def __init__(self, mesh, family, degree, problem_name, dt, dirname='results'):
+    def __init__(self, mesh, family, degree, problem_name, dt, outward_normals=None, dirname='results'):
 
         self.dt = dt
         self.filename = path.join(dirname, 'imsolve_dt'+str(dt)+problem_name+'.pvd')
+        self.outward_normals = outward_normals
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
 
     def run(self, tmax):
@@ -16,6 +17,10 @@ class ImplicitMidpointLinearSWSolver(object):
         g = Constant(self.setup.params.g)
         H = Constant(self.setup.params.H)
         dt = self.dt
+        if self.outward_normals is not None:
+            perp = lambda u: cross(self.outward_normals, u)
+        else:
+            perp = lambda u: as_vector([-u[1], u[0]])
 
         V1 = self.setup.spaces['u']
         V2 = self.setup.spaces['h']
@@ -67,36 +72,14 @@ class ImplicitMidpointLinearSWSolver(object):
         self.h_end = h1
 
 if __name__=="__main__":
-    import argparse
+    from input_parsing import ImplicitMidpointArgparser
+    imargs = ImplicitMidpointArgparser()
+    mesh = imargs.mesh
+    try:
+        outward_normals = imargs.outward_normals
+    except AttributeError:
+        outward_normals = None
+    args = imargs.args
 
-    parser = argparse.ArgumentParser(description="setup shallow water solver")
-    geometry = parser.add_mutually_exclusive_group()
-    geometry.add_argument("--sphere", nargs=2, type=float)
-    geometry.add_argument("--square", nargs=2, type=float)
-    parser.add_argument("problem_name")
-    parser.add_argument("dt", type=float)
-    parser.add_argument("tmax", type=float)
-    parser.add_argument("--family", default="BDM")
-    parser.add_argument("--degree", type=int, default=0)
-
-    args = parser.parse_args()
-
-    if args.square is not None:
-        L = args.square[0]
-        n = int(args.square[1])
-        print "setting up square mesh of length %s with n %s"%(L, n)
-        mesh = PeriodicSquareMesh(n, n, args.square[0])
-    elif args.sphere is not None:
-        R = args.sphere[1]
-        ref = int(args.sphere[0])
-        print "setting up sphere mesh with radius %s and refinement level %s"%(R, ref)
-        mesh = IcosahedralSphereMesh(radius=R, refinement_level=ref, degree=1)
-        global_normal = Expression(("x[0]", "x[1]", "x[2]"))
-        mesh.init_cell_orientations(global_normal)
-        outward_normals = CellNormal(mesh)
-        perp = lambda u: cross(outward_normals, u)
-    else:
-        print "Geometry not recognised"
-
-    im = ImplicitMidpointLinearSWSolver(mesh, args.family, args.degree, args.problem_name, args.dt)
+    im = ImplicitMidpointLinearSWSolver(mesh, args.family, args.degree, args.problem_name, args.dt, outward_normals=outward_normals)
     im.run(args.tmax)
