@@ -81,3 +81,39 @@ class SetupShallowWater(object):
         Dexpr = - ((R * Omega * u_max)*(x[2]*x[2]/(R*R)))/g
         self.h0.interpolate(Dexpr)
         self.u0.project(uexpr)
+
+    def w2(self):
+        self.params = ShallowWaterParameters(H=5960.)
+        x = SpatialCoordinate(self.mesh)
+        R = self.mesh._icosahedral_sphere
+        Omega = self.params.Omega
+        fexpr = 2*Omega*x[2]/R
+        V = FunctionSpace(self.mesh, "CG", 1)
+        self.params.f = Function(V).interpolate(fexpr)
+        day = 24.*60.*60.
+        u_0 = 2*pi*R/(12*day)  # Maximum amplitude of the zonal wind (m/s)
+        u_max = Constant(u_0)
+        uexpr = as_vector([-u_max*x[1]/R, u_max*x[0]/R, 0.0])
+        g = Constant(self.params.g)
+        h0 = Constant(self.params.H)
+        Dexpr = h0 - ((R * Omega * u_max + u_max*u_max/2.0)*(x[2]*x[2]/(R*R)))/g
+        self.h0.interpolate(Dexpr)
+        self.u0.project(uexpr)
+
+    def w5(self):
+        self.params = ShallowWaterParameters(H=5960.)
+        x = SpatialCoordinate(self.mesh)
+        R = self.mesh._icosahedral_sphere
+        Omega = self.params.Omega
+        fexpr = 2*Omega*x[2]/R
+        V = FunctionSpace(self.mesh, "CG", 1)
+        self.params.f = Function(V).interpolate(fexpr)
+        day = 24.*60.*60.
+        u_0 = 20.
+        u_max = Constant(u_0)
+        uexpr = as_vector([-u_max*x[1]/R, u_max*x[0]/R, 0.0])
+        g = Constant(self.params.g)
+        h0 = Constant(self.params.H)
+        Dexpr = Expression("h0 - ((R0 * Omega * u0 + pow(u0,2)/2.0)*(x[2]*x[2]/(R0*R0)))/g - (2000 * (1 - sqrt(fmin(pow(pi/9.0,2),pow(atan2(x[1]/R0,x[0]/R0)+1.0*pi/2.0,2)+pow(asin(x[2]/R0)-pi/6.0,2)))/(pi/9.0)))", h0=h0, R0=R, Omega=Omega, u0=20.0, g=g)
+        self.h0.interpolate(Dexpr)
+        self.u0.project(uexpr)
