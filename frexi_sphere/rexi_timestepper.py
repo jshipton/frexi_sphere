@@ -1,10 +1,11 @@
 from firedrake import *
 from frexi_sphere.rexi import RexiTimestep
+from os import path
 
 R = 6371220.
 t = 0.
 tmax = 90000.
-dt = 1500.
+dt = 3000.
 mesh = IcosahedralSphereMesh(radius=R, refinement_level=3, degree=3)
 global_normal = Expression(("x[0]", "x[1]", "x[2]"))
 mesh.init_cell_orientations(global_normal)
@@ -22,6 +23,10 @@ h_err = Function(V2,name="h_err")
 u0 = Function(V1,name="u").assign(timestep.setup.u0)
 h0 = Function(V2,name="h").assign(timestep.setup.h0)
 
+filename = path.join('results', 'rexi_w2_dt'+str(dt)+'_h'+str(h)+'_M'+str(M)+'.pvd')
+outfile = File(filename)
+outfile.write(u0, h0, u_err, h_err)
+
 while t - 0.5*dt < tmax:
     
     t += dt
@@ -30,3 +35,7 @@ while t - 0.5*dt < tmax:
     h0.assign(timestep.hout)
     u_err.assign(timestep.uout - u_init)
     h_err.assign(timestep.hout - h_init)
+
+    outfile.write(u0, h0, u_err, h_err)
+
+

@@ -17,19 +17,11 @@ class RexiTimestep(object):
         self.nonlinear = nonlinear
         if nonlinear:
             self.alpha1, self.beta1_re, _ = REXI(h, M, n=1, reduce_to_half=False)
-        if problem_name == "w5":
-            bexpr = Expression("2000 * (1 - sqrt(fmin(pow(pi/9.0,2),pow(atan2(x[1]/R0,x[0]/R0)+1.0*pi/2.0,2)+pow(asin(x[2]/R0)-pi/6.0,2)))/(pi/9.0))", R0=6371220.)
-            b = Function(V2).interpolate(bexpr)
-
-
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
         V1 = self.setup.spaces['u']
         V2 = self.setup.spaces['h']
         self.uout = Function(V1,name="u")
         self.hout = Function(V2,name="h")
-        filename = path.join(dirname, 'rexi_'+problem_name+'_t'+str(t)+'_h'+str(h)+'_M'+str(M)+'.pvd')
-        self.outfile = File(filename)
-
 
     def run(self, u0, h0, direct_solve=False):
 
@@ -120,7 +112,7 @@ class RexiTimestep(object):
                 -inner(gradperp(inner(wr, perp(u0))), u0)*dx
                 - inner(jump(inner(wr, perp(u0)), n),
                         perp_u_upwind(u0))*dS
-                -div(wr)*(h0 + 0.5*inner(u0, u0))*dx
+                -div(wr)*(0.5*inner(u0, u0))*dx
             )
             h_cont_term = (
                 (-dot(grad(phr), u0)*h0*dx +
@@ -152,7 +144,6 @@ class RexiTimestep(object):
             self.uout.assign(u1rl_)
             self.hout.assign(h1rl_)
 
-        self.outfile.write(self.uout, self.hout)
 
 if __name__=="__main__":
     from input_parsing import RexiArgparser
