@@ -83,7 +83,7 @@ class SetupShallowWater(object):
         self.u0.project(uexpr)
 
     def w2(self):
-        self.params = ShallowWaterParameters(H=5960.)
+        self.params = ShallowWaterParameters(H=2996.942)
         x = SpatialCoordinate(self.mesh)
         R = self.mesh._icosahedral_sphere
         Omega = self.params.Omega

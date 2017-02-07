@@ -115,8 +115,8 @@ class RexiTimestep(object):
                 -div(wr)*(0.5*inner(u0, u0))*dx
             )
             h_cont_term = (
-                (-dot(grad(phr), u0)*h0*dx +
-                 jump(u0*phr, n)*avg(h0)*dS)
+                (-dot(grad(phr), u0)*(h0-H)*dx +
+                 jump(u0*phr, n)*avg(h0-H)*dS)
             )
 
             aNu = inner(wr, u1r)*dx + inner(phr, h1r)*dx
