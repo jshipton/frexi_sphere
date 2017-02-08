@@ -5,7 +5,7 @@ from sw_setup import SetupShallowWater
 
 class RexiTimestep(object):
 
-    def __init__(self, mesh, family, degree, problem_name, t, h, M, nonlinear=True, outward_normals=None, dirname='results'):
+    def __init__(self, mesh, family, degree, problem_name, t, h, M, reduce_to_half=False, nonlinear=True, outward_normals=None, dirname='results'):
 
         self.dirname = dirname
         self.problem_name = problem_name
@@ -13,10 +13,10 @@ class RexiTimestep(object):
         self.outward_normals = outward_normals
         self.n = FacetNormal(mesh)
 
-        self.alpha, self.beta_re, _ = REXI(h, M, reduce_to_half=False)
+        self.alpha, self.beta_re, _ = REXI(h, M, reduce_to_half=reduce_to_half)
         self.nonlinear = nonlinear
         if nonlinear:
-            self.alpha1, self.beta1_re, _ = REXI(h, M, n=1, reduce_to_half=False)
+            self.alpha1, self.beta1_re, _ = REXI(h, M, n=1, reduce_to_half=reduce_to_half)
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
         V1 = self.setup.spaces['u']
         V2 = self.setup.spaces['h']
@@ -30,13 +30,10 @@ class RexiTimestep(object):
         H = Constant(self.setup.params.H)
         dt = Constant(self.dt)
         n = self.n
-        Upwind = 0.5*(sign(dot(u0, n))+1)
         if self.outward_normals is not None:
             perp = lambda u: cross(self.outward_normals, u)
-            perp_u_upwind = lambda q: Upwind('+')*cross(self.outward_normals('+'),q('+')) + Upwind('-')*cross(self.outward_normals('-'),q('-'))
         else:
             perp = lambda u: as_vector([-u[1], u[0]])
-            perp_u_upwind = lambda q: Upwind('+')*perp(q('+')) + Upwind('-')*perp(q('-'))
 
         ai = Constant(1.0)
         bi = Constant(100.0)
@@ -106,6 +103,11 @@ class RexiTimestep(object):
         u1rl_,h1rl_,u1il_,h1il_ = w_sum.split()
 
         if self.nonlinear:
+            Upwind = 0.5*(sign(dot(u0, n))+1)
+            if self.outward_normals is not None:
+                perp_u_upwind = lambda q: Upwind('+')*cross(self.outward_normals('+'),q('+')) + Upwind('-')*cross(self.outward_normals('-'),q('-'))
+            else:
+                perp_u_upwind = lambda q: Upwind('+')*perp(q('+')) + Upwind('-')*perp(q('-'))
             un = 0.5*(dot(u0, n) + abs(dot(u0, n)))
             gradperp = lambda u: perp(grad(u))
 

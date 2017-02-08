@@ -76,8 +76,7 @@ def b_coefficients(h, M, n=0):
     else:
         print "n must be 0 or 1"
 
-def REXI(h, M, n=0, reduce_to_half = False):
-
+def REXI(h, M, n=0, reduce_to_half=False):
     params = REXIParameters()
     L = params.L
     mu = params.mu
@@ -96,37 +95,15 @@ def REXI(h, M, n=0, reduce_to_half = False):
 	    beta_re[n+N] += b[m+M].real*h*a[l+L];
 	    beta_im[n+N] += b[m+M].imag*h*a[l+L];
 
-    #for (int n = -N; n < N+1; n++)
-    #{
-    #	alpha[n+N] = i_h*(ga.mu + complex(0, n));
-    #
-    #	int L1 = std::max(-L, n-M);
-    #	int L2 = std::min(L, n+M);
-    #
-    #	beta_re[n+N] = 0;
-    #	for (int k = L1; k < L2; k++)
-    #	{
-    #		assert(k+L >= 0);
-    #		assert(k+L < 2*L+1);
-    #		assert(n-k+M >= 0);
-    #		assert(n-k+M < 2*M+1);
-    #
-    #		beta_re[n+N] += ga.a[k+L]*ea.b[n-k+M].real();
-    #	}
-    #
-    #	beta_re[n+N] *= i_h;
-    #}
-
     if reduce_to_half:
 	# reduce the computational amount to its half,
 	# see understanding REXI in the documentation folder
-
 	alpha = alpha[:N+1]
 	beta_re = beta_re[:N+1]
 	beta_im = beta_im[:N+1]
 
-	# N+1 contains the pole and we don't rescale this one by 2 but all the other ones
-	for i in range(0, N):
+	# don't rescale beta_re[N]
+	for i in range(N):
 	    beta_re[i] *= 2.0
 	    beta_im[i] *= 2.0
 
