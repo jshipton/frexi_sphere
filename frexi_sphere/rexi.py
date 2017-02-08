@@ -106,6 +106,7 @@ class RexiTimestep(object):
         u1rl_,h1rl_,u1il_,h1il_ = w_sum.split()
 
         if self.nonlinear:
+            un = 0.5*(dot(u0, n) + abs(dot(u0, n)))
             gradperp = lambda u: perp(grad(u))
 
             u_adv_term =(
@@ -115,8 +116,10 @@ class RexiTimestep(object):
                 -div(wr)*(0.5*inner(u0, u0))*dx
             )
             h_cont_term = (
-                (-dot(grad(phr), u0)*(h0-H)*dx +
-                 jump(u0*phr, n)*avg(h0-H)*dS)
+                -dot(grad(phr), u0)*(h0-H)*dx +
+                dot(jump(phr), (un('+')*(h0('+')-H)
+                                - un('-')*(h0('-')-H)))*dS
+
             )
 
             aNu = inner(wr, u1r)*dx + inner(phr, h1r)*dx
