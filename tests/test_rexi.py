@@ -23,8 +23,8 @@ def approx_e_ix(x, h, M, use_Gaussian_approx):
     return sum
 
 
-def approx_phi1(x, h, M):
-    b = b_coefficients(h, M, 1)
+def approx_phi(x, h, M, n):
+    b = b_coefficients(h, M, n)
 
     sum = 0
     for m in range(-M, M+1):
@@ -32,6 +32,13 @@ def approx_phi1(x, h, M):
 
     return sum
 
+def exact_phi(n, x):
+    if n == 1:
+        return (exp(1j*x) - 1.)/(1j*x)
+    elif n == 2:
+        return -(exp(1j*x) - 1. -1j*x)/(x**2)
+    else:
+        print "n must be 1 or 2"
 
 def approxGaussian(x, h):
     """
@@ -76,12 +83,12 @@ def test_rexi_exponential_approx():
         approx = approx_e_ix(x, h, M, False)
         assert abs(exact - approx) < 2.e-11
 
-
-def test_rexi_phi1_approx():
+@pytest.mark.parametrize("n", [1, 2])
+def test_rexi_phi_approx(n):
     h = 1.
     M = 200
     for x in range(-191, 192, 10):
-        exact = (exp(1j*x) - 1.)/(1j*x)
-        approx = approx_phi1(x, h, M)
+        exact = exact_phi(n, x)
+        approx = approx_phi(x, h, M, n)
         print x, exact, approx, abs(exact - approx)
         assert abs(exact - approx) < 2.e-13

@@ -73,8 +73,20 @@ def b_coefficients(h, M, n=0):
             im, err = integrate.quadrature(expr_imag, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
             b.append(2*pi*(re + 1j*im))
         return b
+    elif n == 2:
+        from scipy import pi, cos, sin, exp, integrate
+        def expr_real(xi):
+            return cos(2*pi*m*h*xi)*exp(4*pi**2*xi**2*h**2)*(xi+1/(2*pi))
+        def expr_imag(xi):
+            return sin(2*pi*m*h*xi)*exp(4*pi**2*xi**2*h**2)*(xi+1/(2*pi))
+        b = []
+        for m in range(-M, M+1):
+            re, err= integrate.quadrature(expr_real, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
+            im, err = integrate.quadrature(expr_imag, max(-1./(2*pi), -1./(2*h)), 0, tol=1.e-10, miniter=300)
+            b.append(4*pi**2*(re + 1j*im))
+        return b        
     else:
-        print "n must be 0 or 1"
+        print "n must be 0, 1 or 2"
 
 def REXI(h, M, n=0, reduce_to_half=False):
     params = REXIParameters()

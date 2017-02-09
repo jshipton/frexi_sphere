@@ -17,6 +17,7 @@ class RexiTimestep(object):
         self.nonlinear = nonlinear
         if nonlinear:
             self.alpha1, self.beta1_re, _ = REXI(h, M, n=1, reduce_to_half=reduce_to_half)
+            self.alpha2, self.beta2_re, _ = REXI(h, M, n=2, reduce_to_half=reduce_to_half)
         self.setup = SetupShallowWater(mesh, family, degree, problem_name)
         V1 = self.setup.spaces['u']
         V2 = self.setup.spaces['h']
@@ -143,8 +144,31 @@ class RexiTimestep(object):
                 print i, ai.dat.data[0], ar.dat.data[0], bi.dat.data[0], br.dat.data[0], hr.dat.data.min(), hr.dat.data.max() 
                 w1_sum += w
             u1r_,h1r_,u1i_,h1i_ = w1_sum.split()
-            self.uout.assign(u1rl_ + dt*u1r_)
-            self.hout.assign(h1rl_ + dt*h1r_)
+            au = Function(u0.function_space()).assign(u1rl_ + dt*u1i_)
+            u0.assign(u1rl_ + dt*u1i_)
+            ah = Function(h0.function_space()).assign(h1rl_ + dt*h1i_)
+            h0.assign(h1rl_ + dt*h1i_)
+            print 'u01: ', u0.dat.data.min(), u0.dat.data.max()
+            solve(aNu == LNu, Nu)
+            Nuu2_, Nuh2_, _, _ = Nu.split()
+            print 'Nuu2: ', Nuu2_.dat.data.min(), Nuu2_.dat.data.max()
+            u0.assign(Nuu2_-Nuu_)
+            h0.assign(Nuh2_-Nuh_)
+            print 'u02: ', u0.dat.data.min(), u0.dat.data.max()
+            w2_sum = Function(W)
+            for i in range(N):
+                ai.assign(self.alpha2[i].imag)
+                ar.assign(self.alpha2[i].real)
+                bi.assign(self.beta2_re[i].imag)
+                br.assign(self.beta2_re[i].real)
+
+                rexi_solver.solve()
+                _,hr,_,_ = w.split()
+                print i, ai.dat.data[0], ar.dat.data[0], bi.dat.data[0], br.dat.data[0], hr.dat.data.min(), hr.dat.data.max() 
+                w2_sum += w
+            u2r_,h2r_,u2i_,h2i_ = w2_sum.split()
+            self.uout.assign(au + dt*u2r_)
+            self.hout.assign(ah + dt*h2r_)
         else:
             self.uout.assign(u1rl_)
             self.hout.assign(h1rl_)
