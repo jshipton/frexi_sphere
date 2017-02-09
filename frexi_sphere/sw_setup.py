@@ -32,6 +32,10 @@ class SetupShallowWater(object):
     """
     def __init__(self, mesh, family, degree, problem_name):
         self.mesh = mesh
+        on_sphere = (mesh.geometric_dimension() == 3 and mesh.topological_dimension() == 2)
+        if on_sphere:
+            self.outward_normals = CellNormal(mesh)
+
         V1 = FunctionSpace(mesh, family, degree+1)
         V2 = FunctionSpace(mesh, "DG", degree)
         self.spaces = {'u': V1, 'h': V2}

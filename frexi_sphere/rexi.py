@@ -1,71 +1,52 @@
 from firedrake import *
-from os import path
-from rexi_coefficients import REXI
-from sw_setup import SetupShallowWater
 
-class RexiTimestep(object):
+class Rexi(object):
 
-    def __init__(self, mesh, family, degree, problem_name, t, h, M, reduce_to_half=False, nonlinear=True, outward_normals=None, dirname='results'):
+    def __init__(self, setup, dt, direct_solve):
 
-        self.dirname = dirname
-        self.problem_name = problem_name
-        self.dt = t
-        self.outward_normals = outward_normals
-        self.n = FacetNormal(mesh)
+        V1 = setup.spaces['u']
+        V2 = setup.spaces['h']
+        self.u0 = Function(V1, name="u")
+        self.h0 = Function(V2, name="h")
 
-        self.alpha, self.beta_re, _ = REXI(h, M, reduce_to_half=reduce_to_half)
-        self.nonlinear = nonlinear
-        if nonlinear:
-            self.alpha1, self.beta1_re, _ = REXI(h, M, n=1, reduce_to_half=reduce_to_half)
-            self.alpha2, self.beta2_re, _ = REXI(h, M, n=2, reduce_to_half=reduce_to_half)
-        self.setup = SetupShallowWater(mesh, family, degree, problem_name)
-        V1 = self.setup.spaces['u']
-        V2 = self.setup.spaces['h']
-        self.uout = Function(V1,name="u")
-        self.hout = Function(V2,name="h")
+        f = setup.params.f
+        g = Constant(setup.params.g)
+        H = Constant(setup.params.H)
 
-    def run(self, u0, h0, direct_solve=False):
-
-        f = self.setup.params.f
-        g = Constant(self.setup.params.g)
-        H = Constant(self.setup.params.H)
-        dt = Constant(self.dt)
-        n = self.n
-        if self.outward_normals is not None:
-            perp = lambda u: cross(self.outward_normals, u)
+        if setup.outward_normals is not None:
+            perp = lambda u: cross(setup.outward_normals, u)
         else:
             perp = lambda u: as_vector([-u[1], u[0]])
 
-        ai = Constant(1.0)
-        bi = Constant(100.0)
-        ar = Constant(1.0)
-        br = Constant(100.0)
+        self.ai = Constant(1.0)
+        self.bi = Constant(100.0)
+        self.ar = Constant(1.0)
+        self.br = Constant(100.0)
 
-        V1 = self.setup.spaces['u']
-        V2 = self.setup.spaces['h']
         W = MixedFunctionSpace((V1,V2,V1,V2))
 
         u1r, h1r, u1i, h1i = TrialFunctions(W)
         wr, phr, wi, phi = TestFunctions(W)
 
         a = (
-            inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
-            - ai*inner(wr,u1i)
-            + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
-            + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
-            + ai*inner(wi,u1r)
-            + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
+            inner(wr,u1r)*self.ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
+            - self.ai*inner(wr,u1i)
+            + phr*(self.ar*h1r - dt*H*div(u1r) - self.ai*h1i)
+            + inner(wi,u1i)*self.ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
+            + self.ai*inner(wi,u1r)
+            + phi*(self.ar*h1i - dt*H*div(u1i) + self.ai*h1r)
         )*dx
 
         L = (
-            br*inner(wr,u0)*dx
-            + br*phr*h0*dx 
-            + bi*inner(wi,u0)*dx
-            + bi*phi*h0*dx 
+            self.br*inner(wr,self.u0)*dx
+            + self.br*phr*self.h0*dx 
+            + self.bi*inner(wi,self.u0)*dx
+            + self.bi*phi*self.h0*dx 
         )
 
-        w = Function(W)
-        myprob = LinearVariationalProblem(a, L, w, constant_jacobian=False)
+        self.w_sum = Function(W)
+        self.w = Function(W)
+        myprob = LinearVariationalProblem(a, L, self.w, constant_jacobian=False)
 
         if direct_solve:
             solver_parameters = {'ksp_type':'preonly',
@@ -85,93 +66,27 @@ class RexiTimestep(object):
                                  "fieldsplit_0_pc_type": "lu",
                                  "fieldsplit_1_pc_type": "lu"}
 
-        rexi_solver = LinearVariationalSolver(myprob,
-                                              solver_parameters=solver_parameters)
+        self.rexi_solver = LinearVariationalSolver(
+            myprob, solver_parameters=solver_parameters)
 
-        w_sum = Function(W)
-        N = len(self.alpha)
+    def solve(self, u0, h0, rexi_coefficients):
+        self.u0.assign(u0)
+        self.h0.assign(h0)
+        alpha, beta_re, _ = rexi_coefficients
+
+        N = len(alpha)
+        self.w_sum.assign(0.)
         for i in range(N):
-            ai.assign(self.alpha[i].imag)
-            ar.assign(self.alpha[i].real)
-            bi.assign(self.beta_re[i].imag)
-            br.assign(self.beta_re[i].real)
+            self.ai.assign(alpha[i].imag)
+            self.ar.assign(alpha[i].real)
+            self.bi.assign(beta_re[i].imag)
+            self.br.assign(beta_re[i].real)
 
-            rexi_solver.solve()
-            _,hr,_,_ = w.split()
-            print i, ai.dat.data[0], ar.dat.data[0], bi.dat.data[0], br.dat.data[0], hr.dat.data.min(), hr.dat.data.max() 
-            w_sum += w
+            self.rexi_solver.solve()
 
-        u1rl_,h1rl_,u1il_,h1il_ = w_sum.split()
+            self.w_sum += self.w
 
-        if self.nonlinear:
-            Upwind = 0.5*(sign(dot(u0, n))+1)
-            if self.outward_normals is not None:
-                perp_u_upwind = lambda q: Upwind('+')*cross(self.outward_normals('+'),q('+')) + Upwind('-')*cross(self.outward_normals('-'),q('-'))
-            else:
-                perp_u_upwind = lambda q: Upwind('+')*perp(q('+')) + Upwind('-')*perp(q('-'))
-            un = 0.5*(dot(u0, n) + abs(dot(u0, n)))
-            gradperp = lambda u: perp(grad(u))
-
-            u_adv_term =(
-                -inner(gradperp(inner(wr, perp(u0))), u0)*dx
-                - inner(jump(inner(wr, perp(u0)), n),
-                        perp_u_upwind(u0))*dS
-                -div(wr)*(0.5*inner(u0, u0))*dx
-            )
-            h_cont_term = (
-                -dot(grad(phr), u0)*(h0-H)*dx +
-                dot(jump(phr), (un('+')*(h0('+')-H)
-                                - un('-')*(h0('-')-H)))*dS
-
-            )
-
-            aNu = inner(wr, u1r)*dx + inner(phr, h1r)*dx
-            LNu = u_adv_term + h_cont_term
-            Nu = Function(W)
-            solve(aNu == LNu, Nu)
-            Nuu_, Nuh_, _, _ = Nu.split()
-            u0.assign(Nuu_)
-            h0.assign(Nuh_)
-            w1_sum = Function(W)
-            for i in range(N):
-                ai.assign(self.alpha1[i].imag)
-                ar.assign(self.alpha1[i].real)
-                bi.assign(self.beta1_re[i].imag)
-                br.assign(self.beta1_re[i].real)
-
-                rexi_solver.solve()
-                _,hr,_,_ = w.split()
-                print i, ai.dat.data[0], ar.dat.data[0], bi.dat.data[0], br.dat.data[0], hr.dat.data.min(), hr.dat.data.max() 
-                w1_sum += w
-            u1r_,h1r_,u1i_,h1i_ = w1_sum.split()
-            au = Function(u0.function_space()).assign(u1rl_ + dt*u1i_)
-            u0.assign(u1rl_ + dt*u1i_)
-            ah = Function(h0.function_space()).assign(h1rl_ + dt*h1i_)
-            h0.assign(h1rl_ + dt*h1i_)
-            print 'u01: ', u0.dat.data.min(), u0.dat.data.max()
-            solve(aNu == LNu, Nu)
-            Nuu2_, Nuh2_, _, _ = Nu.split()
-            print 'Nuu2: ', Nuu2_.dat.data.min(), Nuu2_.dat.data.max()
-            u0.assign(Nuu2_-Nuu_)
-            h0.assign(Nuh2_-Nuh_)
-            print 'u02: ', u0.dat.data.min(), u0.dat.data.max()
-            w2_sum = Function(W)
-            for i in range(N):
-                ai.assign(self.alpha2[i].imag)
-                ar.assign(self.alpha2[i].real)
-                bi.assign(self.beta2_re[i].imag)
-                br.assign(self.beta2_re[i].real)
-
-                rexi_solver.solve()
-                _,hr,_,_ = w.split()
-                print i, ai.dat.data[0], ar.dat.data[0], bi.dat.data[0], br.dat.data[0], hr.dat.data.min(), hr.dat.data.max() 
-                w2_sum += w
-            u2r_,h2r_,u2i_,h2i_ = w2_sum.split()
-            self.uout.assign(au + dt*u2r_)
-            self.hout.assign(ah + dt*h2r_)
-        else:
-            self.uout.assign(u1rl_)
-            self.hout.assign(h1rl_)
+        return self.w_sum
 
 
 if __name__=="__main__":

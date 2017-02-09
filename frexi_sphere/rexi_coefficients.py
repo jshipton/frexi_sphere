@@ -88,7 +88,7 @@ def b_coefficients(h, M, n=0):
     else:
         print "n must be 0, 1 or 2"
 
-def REXI(h, M, n=0, reduce_to_half=False):
+def RexiCoefficients(h, M, n=0, reduce_to_half=False):
     params = REXIParameters()
     L = params.L
     mu = params.mu
