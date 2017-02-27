@@ -6,6 +6,7 @@
 \DeclareMathOperator{\diff}{d\!}
 \DeclareMathOperator{\sgn}{sgn}
 \DeclareMathOperator{\erf}{erf}
+\newcommand{\dd}[1]{\frac{\diff}{\diff #1}}
 
 \title{How we do REXI}
 \author{J. Shipton and C. J. Cotter}
@@ -169,13 +170,51 @@ REXI timestep and ten implicit midpoint timesteps.
 
 \section{Nonlinear terms}
 
+Equations are now
+\[
+U_t = LU + N(U).
+\]
+Exponential Euler step is defined by replacing $N(U)\to N(U(0)):=N_0$,
+time-independent,
+\[
+U_t = LU + N_0.
+\]
+(Here for simplicity we assume that $t=0$ at the beginning of the step.
+We multiply by $\exp(-Lt)$ to get
+\[
+\exp(-Lt)U_t - \exp(-Lt)LU = \exp(-Lt)N_0,
+\]
+which becomes
+\[
+\dd{t}\left(\exp(-Lt)U_t\right) = \exp(-Lt)N_0.
+\]
+Integrating,
+\[
+\exp(-L\Delta t)U^{n+1} - U^n = \int_0^{\Delta t} \exp(-Ls)\diff s N_0,
+\]
+which becomes
+\[
+U^{n+1} = \exp(L\Delta t)U^n + \int_0^{\Delta t}\exp(L(\Delta t-s))\diff s N_0.
+\]
+Considering the action of this operator on an eigenvalue of $L$ with pure
+imaginary eigenvalue $ix$, we have
+\[
+\int_0^{\Delta t}e^{ix(\Delta t-s)}\diff s
+= \Delta t \int_0^1 e^{ix\Delta t(1-r)}\diff r
+= \Delta t\frac{1-e^{ix\Delta t}}{ix\Delta t}
+= \Delta t \phi_1(ix\Delta t),
+\]
+where $\phi_1$ is written below.
+
+(Note that our $\phi_1(x)$ is the $\phi_1$ of Hochbruck but evaluated
+at $ix$.)
 \begin{equation}
   \phi_1(x) = \frac{e^{i x}-1}{i x}
 \end{equation}
 
 \begin{align}
   \hat{\phi}_1(\xi) &=-i\int_{-\infty}^{\infty} e^{2\pi i x\xi}\frac{e^{i x}-1}{x}\diff x\\
-  &= -\pi(\sgn(h) - \sgn(2\pi h + 1)) \\
+  &= -\pi(\sgn(\xi) - \sgn(\xi + 1/(2\pi))) \\
   &= \begin{cases}
     2\pi & \mathrm{for} -\frac{1}{2\pi} \leq \xi \leq 0, \\
     0 & \mathrm{otherwise}.
