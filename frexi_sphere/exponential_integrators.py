@@ -10,7 +10,8 @@ class LinearExponentialIntegrator(object):
     """
 
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        self.coefficients = RexiCoefficients(h, M, 0, reduce_to_half)
+        alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
+        self.coefficients = alpha, beta_re
         self.rexi = Rexi(setup, dt, direct_solve)
 
     def apply(self, u_in, h_in, u_out, h_out):
@@ -52,13 +53,13 @@ class NonlinearExponentialIntegrator(LinearExponentialIntegrator):
         gradperp = lambda u: perp(grad(u))
 
         u_adv_term =(
-            -inner(gradperp(inner(w, perp(self.u0))), self.u0)*dx
-            - inner(jump(inner(w, perp(self.u0)), n),
+            inner(gradperp(inner(w, perp(self.u0))), self.u0)*dx
+            + inner(jump(inner(w, perp(self.u0)), n),
                     perp_u_upwind(self.u0))*dS
-            -div(w)*(0.5*inner(self.u0, self.u0))*dx
+            +div(w)*(0.5*inner(self.u0, self.u0))*dx
         )
         h_cont_term = (
-            -dot(grad(phi), self.u0)*(self.h0-H)*dx +
+            +dot(grad(phi), self.u0)*(self.h0-H)*dx -
             dot(jump(phi), (un('+')*(self.h0('+')-H)
                             - un('-')*(self.h0('-')-H)))*dS
         )
@@ -82,7 +83,8 @@ class ETD1(NonlinearExponentialIntegrator):
     """
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
         super(ETD1, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
-        self.phi1_coefficients = RexiCoefficients(h, M, 1, reduce_to_half)
+        alpha, beta_re, beta_im = RexiCoefficients(h, M, 1, reduce_to_half)
+        self.phi1_coefficients = alpha, beta_re
 
     def apply(self, u_in, h_in, u_out, h_out):
 
@@ -97,10 +99,10 @@ class ETD1(NonlinearExponentialIntegrator):
 
         # calculate phi1(dt L)N(U0)
         w1 = self.rexi.solve(Nu, Nh, self.phi1_coefficients)
-        _, _, ui, hi = w1.split()
+        ur, hr, _, _ = w1.split()
 
-        u_out.assign(u_out + self.dt*ui)
-        h_out.assign(h_out + self.dt*hi)
+        u_out.assign(u_out + self.dt*ur)
+        h_out.assign(h_out + self.dt*hr)
 
 
 class ETD2RK(ETD1):
@@ -117,7 +119,8 @@ class ETD2RK(ETD1):
         self.Nh = Function(setup.spaces["h"])
         self.au = Function(setup.spaces["u"])
         self.ah = Function(setup.spaces["h"])
-        self.phi2_coefficients = RexiCoefficients(h, M, 2, reduce_to_half)
+        alpha, beta_re, _ = RexiCoefficients(h, M, 2, reduce_to_half)
+        self.phi2_coefficients = alpha, beta_re
 
     def apply(self, u_in, h_in, u_out, h_out):
 
@@ -138,8 +141,12 @@ class ETD2RK(ETD1):
         # calculate phi2(dtL)(N(A) - N(U))        
         self.Nu += Nau
         self.Nh += Nah
+        print self.Nu.dat.data.min(), self.Nu.dat.data.max()
+        print self.Nh.dat.data.min(), self.Nh.dat.data.max()
         w2 = self.rexi.solve(self.Nu, self.Nh, self.phi2_coefficients)
         ur, hr, _, _ = w2.split()
 
         u_out.assign(self.au + self.dt*ur)
         h_out.assign(self.ah + self.dt*hr)
+
+

@@ -1,4 +1,4 @@
-from frexi_sphere import REXIParameters, REXI, b_coefficients
+from frexi_sphere.rexi_coefficients import REXIParameters, RexiCoefficients, b_coefficients
 from cmath import exp, sqrt, pi
 import pytest
 
@@ -15,7 +15,7 @@ def approx_e_ix(x, h, M, use_Gaussian_approx):
         for m in range(-M, M+1):
 	    sum += b[m+M] * approxGaussian(x+float(m)*h, h)
     else:
-        alpha, beta_re, beta_im = REXI(h, M)
+        alpha, beta_re, beta_im = RexiCoefficients(h, M)
         for n in range(len(alpha)):
 	    denom = (1j*x + alpha[n]);
 	    sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real

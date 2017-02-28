@@ -72,7 +72,7 @@ class Rexi(object):
     def solve(self, u0, h0, rexi_coefficients):
         self.u0.assign(u0)
         self.h0.assign(h0)
-        alpha, beta_re, _ = rexi_coefficients
+        alpha, beta_re = rexi_coefficients
 
         N = len(alpha)
         self.w_sum.assign(0.)

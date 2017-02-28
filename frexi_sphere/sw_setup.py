@@ -35,6 +35,8 @@ class SetupShallowWater(object):
         on_sphere = (mesh.geometric_dimension() == 3 and mesh.topological_dimension() == 2)
         if on_sphere:
             self.outward_normals = CellNormal(mesh)
+        else:
+            self.outward_normals = None
 
         V1 = FunctionSpace(mesh, family, degree+1)
         V2 = FunctionSpace(mesh, "DG", degree)

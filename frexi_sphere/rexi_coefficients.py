@@ -121,6 +121,7 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
 
     return alpha, beta_re, beta_im
 
+
 # This class computes an approximation of an exponential \f$ e^{ix} \f$ by
 # a combination of Gaussians.
 #
