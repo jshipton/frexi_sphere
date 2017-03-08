@@ -141,8 +141,6 @@ class ETD2RK(ETD1):
         # calculate phi2(dtL)(N(A) - N(U))        
         self.Nu += Nau
         self.Nh += Nah
-        print self.Nu.dat.data.min(), self.Nu.dat.data.max()
-        print self.Nh.dat.data.min(), self.Nh.dat.data.max()
         w2 = self.rexi.solve(self.Nu, self.Nh, self.phi2_coefficients)
         ur, hr, _, _ = w2.split()
 
