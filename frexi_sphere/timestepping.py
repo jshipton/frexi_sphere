@@ -26,6 +26,7 @@ class Timestepping(object):
                 self.diagnostics_data[name][diagnostic] = []
 
         self.diagnostics_data['time'] = []
+        self.diagnostics_data['max_courant'] = []
         self.diagnostics_data['energy'] = []
 
     def run(self, dt, tmax, steady_state=False):
@@ -61,11 +62,14 @@ class Timestepping(object):
             for dname, diagnostic in self.diagnostics_dict.iteritems():
                 self.diagnostics_data[fname][dname].append(diagnostic(field))
 
-        self.diagnostics_data['energy'].append(self.diagnostics.energy(h0, u0, self.params.g))
+        max_courant = self.diagnostics.max_courant_number(u0, dt)
+        energy = self.diagnostics.energy(h0, u0, self.params.g)
+        self.diagnostics_data['max_courant'].append(max_courant)
+        self.diagnostics_data['energy'].append(energy)
         self.diagnostics_data['time'].append(t)
 
-        # print time and energy to check things are going well    
-        print t, self.diagnostics_data['energy'][-1]
+        # print some diagnostics to check things are going well    
+        print t, energy, max_courant
 
         # timestepping loop
         while t < tmax - 0.5*dt:
@@ -83,11 +87,14 @@ class Timestepping(object):
             for fname, field in self.field_dict.iteritems():
                 for dname, diagnostic in self.diagnostics_dict.iteritems():
                     self.diagnostics_data[fname][dname].append(diagnostic(field))
-            self.diagnostics_data['energy'].append(self.diagnostics.energy(h0, u0, self.params.g))
+            max_courant = self.diagnostics.max_courant_number(u0, dt)
+            energy = self.diagnostics.energy(h0, u0, self.params.g)
+            self.diagnostics_data['max_courant'].append(max_courant)
+            self.diagnostics_data['energy'].append(energy)
             self.diagnostics_data['time'].append(t)
 
-            # print time and energy to check things are going well    
-            print t, self.diagnostics_data['energy'][-1]
+            # print some diagnostics to check things are going well    
+            print t, energy, max_courant
 
         # dump diagnostics dictionary
         with open(self.diagnostics_file, "w") as f:

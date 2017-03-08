@@ -1,4 +1,4 @@
-from firedrake import assemble, inner, dx, sqrt, op2, dot, FunctionSpace, Function
+from firedrake import assemble, inner, dx, sqrt, op2, dot, FunctionSpace, Function, TestFunction
 import numpy as np
 
 class Diagnostics(object):
@@ -42,3 +42,12 @@ class Diagnostics(object):
     @staticmethod
     def energy(h, u, g):
         return assemble(0.5*h*(inner(u, u) + g*h)*dx)
+
+    def max_courant_number(self, u, dt):
+        if not hasattr(self, "_area"):
+            V = FunctionSpace(u.function_space().mesh(), "DG", 0)
+            expr = TestFunction(V)*dx
+            self._area = assemble(expr)
+            self.Courant = Function(V)
+        self.Courant.project(sqrt(inner(u, u))/sqrt(self._area)*dt)
+        return self.Courant.dat.data.max()
