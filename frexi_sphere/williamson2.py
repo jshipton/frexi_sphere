@@ -14,7 +14,7 @@ mesh.init_cell_orientations(global_normal)
 degrees = [0, 1]
 
 # setup parameters for timestepping
-tmax = 4000.#5*24.*60.*60.
+tmax = 5*24.*60.*60.
 dt_bounds = [1000., 3000.]
 dt_old = 1000.
 dt = 2000.
