@@ -21,7 +21,7 @@ dt = 2000.
 
 for degree in degrees:
     print "degree is: ", degree
-    while dt - dt_old > 100.:
+    while abs(dt - dt_old) > 100.:
         print "dt is: ", dt
         setup = SetupShallowWater(mesh, family="BDM", degree=degree, problem_name="w2")
 
@@ -43,14 +43,12 @@ for degree in degrees:
         fields = [u0, h0]
 
         timestepping = frexi_sphere.timestepping.Timestepping(dirname, fields, setup.params, timestepper)
-        timestepping.run(dt, tmax, steady_state=True)
-
-        with open(path.join('results/'+dirname, "diagnostics.json"), 'r') as f:
-            data=json.load(f)
-        if abs(data['time'][-1]-tmax) <= dt:
+        try:
+            timestepping.run(dt, tmax, steady_state=True)
             dt_bounds = [dt, dt_bounds[1]]
-        else:
+        except:
             dt_bounds = [dt_bounds[0], dt]
+            
         dt_old = dt
         dt = 0.5*(dt_bounds[0] + dt_bounds[1])
             
