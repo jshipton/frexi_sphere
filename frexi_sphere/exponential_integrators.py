@@ -28,7 +28,7 @@ class NonlinearExponentialIntegrator(LinearExponentialIntegrator):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
+    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, nonlinear=True):
         super(NonlinearExponentialIntegrator, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
         self.dt = dt
         H = Constant(setup.params.H)
@@ -40,32 +40,41 @@ class NonlinearExponentialIntegrator(LinearExponentialIntegrator):
         W = MixedFunctionSpace((V1, V2))
         u, h = TrialFunctions(W)
         w, phi = TestFunctions(W)
-
-        n = FacetNormal(setup.mesh)
-        Upwind = 0.5*(sign(dot(self.u0, n))+1)
-        if setup.outward_normals is not None:
-            perp = lambda u: cross(setup.outward_normals, u)
-            perp_u_upwind = lambda q: Upwind('+')*cross(setup.outward_normals('+'),q('+')) + Upwind('-')*cross(setup.outward_normals('-'),q('-'))
-        else:
-            perp = lambda u: as_vector([-u[1], u[0]])
-            perp_u_upwind = lambda q: Upwind('+')*perp(q('+')) + Upwind('-')*perp(q('-'))
-        un = 0.5*(dot(self.u0, n) + abs(dot(self.u0, n)))
-        gradperp = lambda u: perp(grad(u))
-
-        u_adv_term =(
-            inner(gradperp(inner(w, perp(self.u0))), self.u0)*dx
-            + inner(jump(inner(w, perp(self.u0)), n),
-                    perp_u_upwind(self.u0))*dS
-            +div(w)*(0.5*inner(self.u0, self.u0))*dx
-        )
-        h_cont_term = (
-            +dot(grad(phi), self.u0)*(self.h0-H)*dx -
-            dot(jump(phi), (un('+')*(self.h0('+')-H)
-                            - un('-')*(self.h0('-')-H)))*dS
-        )
-
         a = inner(w, u)*dx + phi*h*dx
-        L = u_adv_term + h_cont_term
+
+        if nonlinear:
+            n = FacetNormal(setup.mesh)
+            Upwind = 0.5*(sign(dot(self.u0, n))+1)
+            if setup.outward_normals is not None:
+                perp = lambda u: cross(setup.outward_normals, u)
+                perp_u_upwind = lambda q: Upwind('+')*cross(setup.outward_normals('+'),q('+')) + Upwind('-')*cross(setup.outward_normals('-'),q('-'))
+            else:
+                perp = lambda u: as_vector([-u[1], u[0]])
+                perp_u_upwind = lambda q: Upwind('+')*perp(q('+')) + Upwind('-')*perp(q('-'))
+            un = 0.5*(dot(self.u0, n) + abs(dot(self.u0, n)))
+            gradperp = lambda u: perp(grad(u))
+
+            u_adv_term =(
+                inner(gradperp(inner(w, perp(self.u0))), self.u0)*dx
+                + inner(jump(inner(w, perp(self.u0)), n),
+                        perp_u_upwind(self.u0))*dS
+                +div(w)*(0.5*inner(self.u0, self.u0))*dx
+            )
+            h_cont_term = (
+                +dot(grad(phi), self.u0)*(self.h0-H)*dx -
+                dot(jump(phi), (un('+')*(self.h0('+')-H)
+                                - un('-')*(self.h0('-')-H)))*dS
+            )
+
+            L = u_adv_term + h_cont_term
+
+        if hasattr(setup, 'b'):
+            b_term = setup.params.g*(div(w)*setup.b*dx - inner(jump(w, n), un('+')*setup.b('+') - un('-')*setup.b('-'))*dS)
+            if nonlinear:
+                L += b_term
+            else:
+                L = b_term
+
         self.Nw = Function(W)
         myprob = LinearVariationalProblem(a, L, self.Nw)
         self.nonlinear_solver = LinearVariationalSolver(myprob)
@@ -148,3 +157,45 @@ class ETD2RK(ETD1):
         h_out.assign(self.ah + self.dt*hr)
 
 
+class SSPRK2V(NonlinearExponentialIntegrator):
+    """
+    u* = v* = u^n + dtN(u^n)
+    u^{n+1} = exp(dtL)u^n + dt/2(exp(dtL)N(u^n) + N(exp(dtL)u*))
+    """
+
+    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
+        super(SSPRK2V, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+        self.ustar = Function(setup.spaces["u"])
+        self.hstar = Function(setup.spaces["h"])
+        self.u1 = Function(setup.spaces["u"])
+        self.h1 = Function(setup.spaces["h"])
+
+    def apply(self, u_in, h_in, u_out, h_out):
+
+        dt = self.dt
+        # calculate N(U^n) and U*
+        self.u0.assign(u_in)
+        self.h0.assign(h_in)
+        self.nonlinear_solver.solve()
+        Nu, Nh = self.Nw.split()        
+        self.ustar = u_in + dt*Nu
+        self.hstar = h_in + dt*Nh
+
+        # calculate exp(dtL)U^n
+        super(SSPRK2V, self).apply(u_in, h_in, u_out, h_out)
+
+        # calculate exp(dtL)N(u^n)
+        super(SSPRK2V, self).apply(Nu, Nh, self.u1, self.h1)
+        u_out += 0.5*dt*self.u1
+        h_out += 0.5*dt*self.h1
+
+        # calculate N(exp(dtL)u*)
+        super(SSPRK2V, self).apply(self.ustar, self.hstar, self.u1, self.h1)
+        self.u0.assign(self.u1)
+        self.h0.assign(self.h1)
+        self.nonlinear_solver.solve()
+        Nexpustar, Nexphstar = self.Nw.split()
+        u_out += 0.5*dt*Nexpustar
+        h_out += 0.5*dt*Nexphstar
+
+    
