@@ -2,7 +2,7 @@ from firedrake import *
 
 class Rexi(object):
 
-    def __init__(self, setup, dt, direct_solve):
+    def __init__(self, setup, direct_solve):
 
         V1 = setup.spaces['u']
         V2 = setup.spaces['h']
@@ -12,6 +12,8 @@ class Rexi(object):
         f = setup.params.f
         g = Constant(setup.params.g)
         H = Constant(setup.params.H)
+        self.dt = Constant(1.)
+        dt = self.dt
 
         if setup.outward_normals is not None:
             perp = lambda u: cross(setup.outward_normals, u)
@@ -69,10 +71,11 @@ class Rexi(object):
         self.rexi_solver = LinearVariationalSolver(
             myprob, solver_parameters=solver_parameters)
 
-    def solve(self, u0, h0, rexi_coefficients):
+    def solve(self, u0, h0, dt, rexi_coefficients):
         self.u0.assign(u0)
         self.h0.assign(h0)
         alpha, beta_re = rexi_coefficients
+        self.dt.assign(dt)
 
         N = len(alpha)
         self.w_sum.assign(0.)

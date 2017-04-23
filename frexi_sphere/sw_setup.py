@@ -44,8 +44,7 @@ class SetupShallowWater(object):
 
         self.u0 = Function(self.spaces['u'])
         self.h0 = Function(self.spaces['h'])
-        setup = getattr(self, problem_name)
-        setup()
+        self.ics = getattr(self, problem_name)
 
     def ex1(self):
         self.params = ShallowWaterParameters(f=1.0, g=1.0, H=1.0)
@@ -71,7 +70,7 @@ class SetupShallowWater(object):
         Dexpr = Expression("R*acos(fmin(((x[0]*x0 + x[1]*x1 + x[2]*x2)/(R*R)), 1.0)) < rc ? 50.*h0*(1 + cos(pi*R*acos(fmin(((x[0]*x0 + x[1]*x1 + x[2]*x2)/(R*R)), 1.0))/rc)) : 0.0", R=R, rc=R/3., h0=self.params.H, x0=0.0, x1=0.0, x2=R)
         self.h0.interpolate(Dexpr)
 
-    def linear_w2(self):
+    def linear_w2(self, topography=False):
         self.params = ShallowWaterParameters(H=2000.)
         x = SpatialCoordinate(self.mesh)
         R = self.mesh._icosahedral_sphere
@@ -87,6 +86,10 @@ class SetupShallowWater(object):
         Dexpr = - ((R * Omega * u_max)*(x[2]*x[2]/(R*R)))/g
         self.h0.interpolate(Dexpr)
         self.u0.project(uexpr)
+        if topography:
+            bexpr = Expression("700 * (1 - sqrt(fmin(pow(pi/9.0,2),pow(atan2(x[1]/R0,x[0]/R0)+1.0*pi/2.0,2)+pow(asin(x[2]/R0)-pi/6.0,2)))/(pi/9.0))", R0=R)
+            self.b = Function(self.h0.function_space())
+            self.b.interpolate(bexpr)
 
     def w2(self):
         self.params = ShallowWaterParameters(H=2996.942)
@@ -123,3 +126,6 @@ class SetupShallowWater(object):
         Dexpr = Expression("h0 - ((R0 * Omega * u0 + pow(u0,2)/2.0)*(x[2]*x[2]/(R0*R0)))/g - (2000 * (1 - sqrt(fmin(pow(pi/9.0,2),pow(atan2(x[1]/R0,x[0]/R0)+1.0*pi/2.0,2)+pow(asin(x[2]/R0)-pi/6.0,2)))/(pi/9.0)))", h0=h0, R0=R, Omega=Omega, u0=20.0, g=g)
         self.h0.interpolate(Dexpr)
         self.u0.project(uexpr)
+        bexpr = Expression("2000 * (1 - sqrt(fmin(pow(pi/9.0,2),pow(atan2(x[1]/R0,x[0]/R0)+1.0*pi/2.0,2)+pow(asin(x[2]/R0)-pi/6.0,2)))/(pi/9.0))", R0=R)
+        self.b = Function(self.h0.function_space())
+        self.b.interpolate(bexpr)
