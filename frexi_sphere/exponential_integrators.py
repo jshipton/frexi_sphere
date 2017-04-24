@@ -183,15 +183,15 @@ class SSPRK2V(NonlinearExponentialIntegrator):
         self.hstar = h_in + dt*Nh
 
         # calculate exp(dtL)U^n
-        super(SSPRK2V, self).apply(u_in, h_in, u_out, h_out)
+        super(SSPRK2V, self).apply(dt,u_in, h_in, u_out, h_out)
 
         # calculate exp(dtL)N(u^n)
-        super(SSPRK2V, self).apply(Nu, Nh, self.u1, self.h1)
+        super(SSPRK2V, self).apply(dt,Nu, Nh, self.u1, self.h1)
         u_out += 0.5*dt*self.u1
         h_out += 0.5*dt*self.h1
 
         # calculate N(exp(dtL)u*)
-        super(SSPRK2V, self).apply(self.ustar, self.hstar, self.u1, self.h1)
+        super(SSPRK2V, self).apply(dt,self.ustar, self.hstar, self.u1, self.h1)
         self.u0.assign(self.u1)
         self.h0.assign(self.h1)
         self.nonlinear_solver.solve()
