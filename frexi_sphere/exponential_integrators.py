@@ -13,10 +13,10 @@ class LinearExponentialIntegrator(object):
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
         self.coefficients = alpha, beta_re
-        self.rexi = Rexi(setup, direct_solve)
+        self.rexi = Rexi(setup, direct_solve, self.coefficients)
 
     def apply(self, dt, u_in, h_in, u_out, h_out):
-        w = self.rexi.solve(u_in, h_in, dt, self.coefficients)
+        w = self.rexi.solve(u_in, h_in, dt)
         ur, hr, _, _ = w.split()
         u_out.assign(ur)
         h_out.assign(hr)
