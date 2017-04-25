@@ -1,6 +1,6 @@
 from firedrake import *
 
-class REXI_PC(object):
+class REXI_PC(PCBase):
     def initialize(self, pc):
         _, P = pc.getOperators()
         context = P.getPythonContext()
@@ -19,7 +19,7 @@ class REXI_PC(object):
 
         self.y_fn = Function(W)
         self.x_fn = Function(W)
-        
+
         M = MixedFunctionSpace((V1, V2))
         self.vR = Function(M)
         self.vI = Function(M)
@@ -38,38 +38,44 @@ class REXI_PC(object):
             + q*((ar - abs(ai))*h - dt*H*div(u))
             )*dx
 
-        self.pc_solver = LinearSolver(assemble(a),
+        self.pc_solver = LinearSolver(assemble(a, mat_type='aij'),
                                       solver_parameters={
                                           'ksp_type':'preonly',
-                                          'mat_type': 'aij',
                                           'pc_type':'lu',
                                           'pc_factor_mat_solver_package': 
                                           'mumps'})
 
-    def apply(self, pc, x, y):
+    def applyTranspose(self, pc, x, y):
+        raise NotImplementedError('We do not provide a transpose')
+
+    def update(self, pc):
+        print "Update"
+        raise NotImplementedError('We do not provide an update')
+
+    def apply(self, pc, y, x):
 
         with self.y_fn.dat.vec as yvec:
             yvec.array[:] = y.array[:]
 
-            ur_in, hr_in, ui_in, hi_in = self.y_fn.split()
-            ur_RHS, hr_RHS = self.vR.split()
-            ui_RHS, hi_RHS = self.vI.split()
-            #apply the mixture transformation
-            ur_RHS.assign( ur_in - sgn(self.ai)*ui_in )
-            hr_RHS.assign( hr_in - sgn(self.ai)*hi_in )
-            ui_RHS.assign( sgn(self.ai)*ur_in + ui_in )
-            hi_RHS.assign( sgn(self.ai)*hr_in + hi_in )
-            #apply the solvers
-            self.pc_solver.solve(self.uR, self.vR)
-            self.pc_solver.solve(self.uI, self.vI)
-            #copy back to x
-            ur, hr = self.uR.split()
-            ui, hi = self.uI.split()
-            ur_out, hr_out, ui_out, hi_out = self.x_fn.split()
-            ur_out.assign(ur)
-            hr_out.assign(hr)
-            ui_out.assign(ui)
-            hi_out.assign(hi)
+        ur_in, hr_in, ui_in, hi_in = self.y_fn.split()
+        ur_RHS, hr_RHS = self.vR.split()
+        ui_RHS, hi_RHS = self.vI.split()
+        #apply the mixture transformation
+        ur_RHS.assign( ur_in - sign(self.ai)*ui_in )
+        hr_RHS.assign( hr_in - sign(self.ai)*hi_in )
+        ui_RHS.assign( sign(self.ai)*ur_in + ui_in )
+        hi_RHS.assign( sign(self.ai)*hr_in + hi_in )
+        #apply the solvers
+        self.pc_solver.solve(self.uR, self.vR)
+        self.pc_solver.solve(self.uI, self.vI)
+        #copy back to x
+        ur, hr = self.uR.split()
+        ui, hi = self.uI.split()
+        ur_out, hr_out, ui_out, hi_out = self.x_fn.split()
+        ur_out.assign(ur)
+        hr_out.assign(hr)
+        ui_out.assign(ui)
+        hi_out.assign(hi)
 
         with self.x_fn.dat.vec_ro as xvec:
             x.array[:] = xvec.array[:]
@@ -110,7 +116,8 @@ class Rexi(object):
                                  'pc_factor_mat_solver_package': 'mumps'}
         else:
             solver_parameters = {"ksp_type": "gmres",
-                                 "ksp_monitor": True,
+                                 "ksp_converged_reason": True,
+                                 "mat_type":"matfree",
                                  "pc_type": "python",
                                  "pc_python_type": "rexi.REXI_PC"}
 
@@ -149,15 +156,15 @@ class Rexi(object):
                           'H':H, 'g':g, 'f':f, 'ar':ar,
                           'ai':ai, 'perp':perp}
                 self.rexi_solver.append(LinearVariationalSolver(
-                    myprob, solver_parameters=solver_parameters),
-                                        appctx=appctx)
+                    myprob, solver_parameters=solver_parameters,
+                                        appctx=appctx))
+
     def solve(self, u0, h0, dt):
         self.u0.assign(u0)
         self.h0.assign(h0)
         self.dt.assign(dt)
 
         self.w_sum.assign(0.)
-        print "---"
         for i in range(len(self.rexi_solver)):
             self.rexi_solver[i].solve()
             self.w_sum += self.w

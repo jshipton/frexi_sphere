@@ -8,7 +8,8 @@ import json
 
 # set up mesh and initial conditions for Williamson 2 testcase
 R = 6371220.
-mesh = IcosahedralSphereMesh(radius=R, refinement_level=3, degree=3)
+ref_level = 3
+mesh = IcosahedralSphereMesh(radius=R, refinement_level=ref_level, degree=3)
 global_normal = Expression(("x[0]", "x[1]", "x[2]"))
 mesh.init_cell_orientations(global_normal)
 
