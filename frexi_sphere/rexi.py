@@ -111,46 +111,46 @@ class Rexi(object):
         else:
             solver_parameters = {"ksp_type": "gmres",
                                  "ksp_monitor": True,
-                                 "pc_type": "fieldsplit",
-                                 "mat_type": "aij",
-                                 "pc_fieldsplit_type": "multiplicative",
-                                 "pc_fieldsplit_0_fields": "0,1",
-                                 "pc_fieldsplit_1_fields": "2,3",
-                                 "fieldsplit_0_ksp_type": "preonly",
-                                 "fieldsplit_1_ksp_type": "preonly",
-                                 "fieldsplit_0_pc_type": "lu",
-                                 "fieldsplit_1_pc_type": "lu"}
-
+                                 "pc_type": "python",
+                                 "pc_python_type": "rexi.REXI_PC"}
 
         for i in range(len(alpha)):
-            self.ai = Constant(alpha[i].imag)
-            self.bi = Constant(beta_re[i].imag)
-            self.ar = Constant(alpha[i].real)
-            self.br = Constant(beta_re[i].real)
+            ai = Constant(alpha[i].imag)
+            bi = Constant(beta_re[i].imag)
+            ar = Constant(alpha[i].real)
+            br = Constant(beta_re[i].real)
             
             a = (
-                inner(wr,u1r)*self.ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
-                - self.ai*inner(wr,u1i)
-                + phr*(self.ar*h1r - dt*H*div(u1r) - self.ai*h1i)
-                + inner(wi,u1i)*self.ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
-                + self.ai*inner(wi,u1r)
-                + phi*(self.ar*h1i - dt*H*div(u1i) + self.ai*h1r)
+                inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
+                - ai*inner(wr,u1i)
+                + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
+                + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
+                + ai*inner(wi,u1r)
+                + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
             )*dx
             
             L = (
-                self.br*inner(wr,self.u0)*dx
-                + self.br*phr*self.h0*dx 
-                + self.bi*inner(wi,self.u0)*dx
-                + self.bi*phi*self.h0*dx 
+                br*inner(wr,self.u0)*dx
+                + br*phr*self.h0*dx 
+                + bi*inner(wi,self.u0)*dx
+                + bi*phi*self.h0*dx 
             )
 
             self.w_sum = Function(W)
             self.w = Function(W)
             myprob = LinearVariationalProblem(a, L, self.w)
 
-            self.rexi_solver.append(LinearVariationalSolver(
-                myprob, solver_parameters=solver_parameters))
-
+            if(direct_solve):
+                self.rexi_solver.append(LinearVariationalSolver(
+                    myprob, solver_parameters=solver_parameters))
+            else:
+                #Pack in context variables for the preconditioner
+                appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
+                          'H':H, 'g':g, 'f':f, 'ar':ar,
+                          'ai':ai, 'perp':perp}
+                self.rexi_solver.append(LinearVariationalSolver(
+                    myprob, solver_parameters=solver_parameters),
+                                        appctx=appctx)
     def solve(self, u0, h0, dt):
         self.u0.assign(u0)
         self.h0.assign(h0)
