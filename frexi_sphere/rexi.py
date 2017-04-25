@@ -1,7 +1,22 @@
 from firedrake import *
 
 class REXI_PC(object):
-    def setup(W, V1, V2, dt, H, g, f, ar, ai, perp):
+    def initialize(self, pc):
+        _, P = pc.getOperators()
+        context = P.getPythonContext()
+        aapctx = context.appctx
+
+        W = aapctx['W']
+        V1 = aapctx['V1']
+        V2 = aapctx['V2']
+        dt = aapctx['dt']
+        H = aapctx['H']
+        g = aapctx['g']
+        f = aapctx['f']
+        ar = aapctx['ar']
+        ai = aapctx['ai']
+        perp = aapctx['perp']
+
         self.y_fn = Function(W)
         self.x_fn = Function(W)
         
@@ -26,6 +41,7 @@ class REXI_PC(object):
         self.pc_solver = LinearSolver(assemble(a),
                                       solver_parameters={
                                           'ksp_type':'preonly',
+                                          'mat_type': 'aij',
                                           'pc_type':'lu',
                                           'pc_factor_mat_solver_package': 
                                           'mumps'})
