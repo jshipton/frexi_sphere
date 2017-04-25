@@ -1,5 +1,63 @@
 from firedrake import *
 
+class REXI_PC(object):
+    def setup(W, V1, V2, dt, H, g, f, ar, ai, perp):
+        self.y_fn = Function(W)
+        self.x_fn = Function(W)
+        
+        M = MixedFunctionSpace((V1, V2))
+        self.vR = Function(M)
+        self.vI = Function(M)
+
+        self.uR = Function(M)
+        self.uI = Function(M)
+        
+        self.ar = ar
+        self.ai = ai
+
+        u, h = TrialFunctions(M)
+        v, q = TestFunctions(M)
+
+        a = (
+            inner(v,u)*(ar - abs(ai)) - dt*f*inner(v,perp(u)) + dt*g*div(v)*h
+            + q*((ar - abs(ai))*h - dt*H*div(u))
+            )*dx
+
+        self.pc_solver = LinearSolver(assemble(a),
+                                      solver_parameters={
+                                          'ksp_type':'preonly',
+                                          'pc_type':'lu',
+                                          'pc_factor_mat_solver_package': 
+                                          'mumps'})
+
+    def apply(self, pc, x, y):
+
+        with self.y_fn.dat.vec as yvec:
+            yvec.array[:] = y.array[:]
+
+            ur_in, hr_in, ui_in, hi_in = self.y_fn.split()
+            ur_RHS, hr_RHS = self.vR.split()
+            ui_RHS, hi_RHS = self.vI.split()
+            #apply the mixture transformation
+            ur_RHS.assign( ur_in - sgn(self.ai)*ui_in )
+            hr_RHS.assign( hr_in - sgn(self.ai)*hi_in )
+            ui_RHS.assign( sgn(self.ai)*ur_in + ui_in )
+            hi_RHS.assign( sgn(self.ai)*hr_in + hi_in )
+            #apply the solvers
+            self.pc_solver.solve(self.uR, self.vR)
+            self.pc_solver.solve(self.uI, self.vI)
+            #copy back to x
+            ur, hr = self.uR.split()
+            ui, hi = self.uI.split()
+            ur_out, hr_out, ui_out, hi_out = self.x_fn.split()
+            ur_out.assign(ur)
+            hr_out.assign(hr)
+            ui_out.assign(ui)
+            hi_out.assign(hi)
+
+        with self.x_fn.dat.vec_ro as xvec:
+            x.array[:] = xvec.array[:]
+
 class Rexi(object):
 
     def __init__(self, setup, direct_solve, rexi_coefficients):
@@ -83,10 +141,9 @@ class Rexi(object):
         self.dt.assign(dt)
 
         self.w_sum.assign(0.)
-
+        print "---"
         for i in range(len(self.rexi_solver)):
             self.rexi_solver[i].solve()
-
             self.w_sum += self.w
 
         return self.w_sum
