@@ -45,6 +45,7 @@ class SetupShallowWater(object):
         self.u0 = Function(self.spaces['u'])
         self.h0 = Function(self.spaces['h'])
         self.ics = getattr(self, problem_name)
+        self.ics()
 
     def ex1(self):
         self.params = ShallowWaterParameters(f=1.0, g=1.0, H=1.0)
@@ -129,3 +130,45 @@ class SetupShallowWater(object):
         bexpr = Expression("2000 * (1 - sqrt(fmin(pow(pi/9.0,2),pow(atan2(x[1]/R0,x[0]/R0)+1.0*pi/2.0,2)+pow(asin(x[2]/R0)-pi/6.0,2)))/(pi/9.0))", R0=R)
         self.b = Function(self.h0.function_space())
         self.b.interpolate(bexpr)
+
+    def merging_vortices(self):
+        self.params = ShallowWaterParameters(H=1., f=1., g=1.)
+        f = self.params.f
+        g = self.params.g
+        H = self.params.H
+        k = Constant(0.003)
+        a = Constant(.1)
+        x0 = Constant(0.425)
+        y0 = Constant(0.5)
+        x1 = Constant(0.575)
+        y1 = Constant(0.5)
+        x, y = SpatialCoordinate(self.mesh)
+        psi_expr = (k/a)*(exp(-((x-x0)**2+(y-y0)**2)/(a**2)) + exp(-((x-x1)**2+(y-y1)**2)/(a**2)))
+        V0 = FunctionSpace(self.mesh, "CG", 2)
+        psi = Function(V0).interpolate(psi_expr)
+        self.u0.project(perp(grad(psi)))
+        V1 = self.u0.function_space()
+        V2 = self.h0.function_space()
+        W = V1*V2
+        F = Function(W)
+        v = Function(V1).project(f*perp(self.u0))
+        z, D = TrialFunctions(W)
+        w, phi = TestFunctions(W)
+        a = inner(w, z)*dx + div(w)*g*D*dx + phi*div(z)*dx
+        L = phi*div(v)*dx
+        params = {'ksp_type':'gmres',
+                  'pc_type': 'fieldsplit',
+                  'pc_fieldsplit_type': 'schur',
+                  'pc_fieldsplit_schur_fact_type': 'full',
+                  'pc_fieldsplit_schur_precondition': 'selfp',
+                  'fieldsplit_1_ksp_type': 'preonly',
+                  'fieldsplit_1_pc_type': 'gamg',
+                  'fieldsplit_1_mg_levels_pc_type': 'bjacobi',
+                  'fieldsplit_1_mg_levels_sub_pc_type': 'ilu',
+                  'fieldsplit_0_ksp_type': 'richardson',
+                  'fieldsplit_0_ksp_max_it': 4,
+                  'ksp_atol': 1.e-08,
+                  'ksp_rtol': 1.e-08}
+        solve(a==L, F, solver_parameters=params)
+        z, D = F.split()
+        self.h0.assign(H+D)
