@@ -31,7 +31,8 @@ h = 0.2
 M = 64
 
 # make timestepper
-timestepper = SSPRK2V(setup, dt, True, h, M, False)
+direct = True
+timestepper = SSPRK2V(setup, dt, direct, h, M, False)
 
 # output file and output fields
 dirname = 'SSPRK2V_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)
