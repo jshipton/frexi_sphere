@@ -48,6 +48,8 @@ class Rexi(object):
                                  "fieldsplit_1_pc_type": "lu"}
 
 
+        self.w_sum = Function(W)
+        self.w = Function(W)
         for i in range(len(alpha)):
             ai = Constant(alpha[i].imag)
             bi = Constant(beta_re[i].imag)
@@ -70,8 +72,6 @@ class Rexi(object):
                 + bi*phi*self.h0*dx
             )
 
-            self.w_sum = Function(W)
-            self.w = Function(W)
             myprob = LinearVariationalProblem(a, L, self.w)
 
             self.rexi_solver.append(LinearVariationalSolver(
