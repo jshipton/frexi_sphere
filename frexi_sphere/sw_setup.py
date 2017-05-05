@@ -145,7 +145,7 @@ class SetupShallowWater(object):
         x, y = SpatialCoordinate(self.mesh)
         psi_expr = (k/a)*(exp(-((x-x0)**2+(y-y0)**2)/(a**2)) + exp(-((x-x1)**2+(y-y1)**2)/(a**2)))
         V0 = FunctionSpace(self.mesh, "CG", 2)
-        psi = Function(V0).interpolate(psi_expr)
+        psi = Function(V0, name='psi').interpolate(psi_expr)
         self.u0.project(perp(grad(psi)))
         V1 = self.u0.function_space()
         V2 = self.h0.function_space()
@@ -155,7 +155,7 @@ class SetupShallowWater(object):
         z, D = TrialFunctions(W)
         w, phi = TestFunctions(W)
         a = inner(w, z)*dx + div(w)*g*D*dx + phi*div(z)*dx
-        L = phi*div(v)*dx
+        L = -phi*div(v)*dx
         params = {'ksp_type':'gmres',
                   'pc_type': 'fieldsplit',
                   'pc_fieldsplit_type': 'schur',
