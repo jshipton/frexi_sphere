@@ -10,13 +10,20 @@ class LinearExponentialIntegrator(object):
     shallow water equations.
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
+    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, create_all_solvers=False):
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
-        self.coefficients = alpha, beta_re
-        self.rexi = Rexi(setup, direct_solve, self.coefficients)
+        if create_all_solvers:
+            coefficients = alpha, beta_re
+            self.rexi = Rexi(setup, direct_solve, coefficients)
+        else:
+            self.coefficients = alpha, beta_re
+            self.rexi = Rexi(setup, direct_solve)
 
     def apply(self, dt, u_in, h_in, u_out, h_out):
-        w = self.rexi.solve(u_in, h_in, dt)
+        if hasattr(self, "coefficients"):
+            w = self.rexi.solve(u_in, h_in, dt, self.coefficients)
+        else:
+            w = self.rexi.solve(u_in, h_in, dt)
         ur, hr, _, _ = w.split()
         u_out.assign(ur)
         h_out.assign(hr)
