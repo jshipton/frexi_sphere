@@ -32,7 +32,7 @@ h = 0.2
 M = 64
 
 # make timestepper
-direct = True
+direct = False
 timestepper = SSPRK2V(setup, dt, direct, h, M, False)
 
 # output file and output fields
