@@ -38,12 +38,25 @@ class REXI_PC(PCBase):
             + q*((ar - abs(ai))*h - dt*H*div(u))
             )*dx
 
-        self.pc_solver = LinearSolver(assemble(a, mat_type='aij'),
-                                      solver_parameters={
-                                          'ksp_type':'preonly',
-                                          'pc_type':'lu',
-                                          'pc_factor_mat_solver_package': 
-                                          'mumps'})
+        hybridisation_parameters = {'ksp_type': 'preonly',
+                                    'ksp_monitor': True,
+                                    'mat_type': 'matfree',
+                                    'pc_type': 'python',
+                                    'hybridization_ksp_monitor': True,
+                                    'pc_python_type': 'firedrake.HybridizationPC',
+                                    'hybridization_hdiv_residual_ksp_type': 'preonly',
+                                    'hybridization_hdiv_residual_ksp_type': 'ilu',
+                                    'hybridization_ksp_type': 'preonly',
+                                    'hybridization_pc_type': 'ilu',
+                                    'hybridization_projector_tolerance': 1.0e-14}
+
+        lu_parameters = {'ksp_type':'preonly',
+                         'pc_type':'lu',
+                         'pc_factor_mat_solver_package': 
+                        'mumps'}
+        
+        self.pc_solver = LinearSolver(assemble(a, mat_type='matfree'),
+                                      solver_parameters=hybridisation_parameters)
 
     def applyTranspose(self, pc, x, y):
         raise NotImplementedError('We do not provide a transpose')
