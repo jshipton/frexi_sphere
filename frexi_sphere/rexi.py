@@ -151,39 +151,81 @@ class Rexi(object):
         self.ar = ar
         self.bi = bi
         self.br = br
-        
-        a = (
-            inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
-            - ai*inner(wr,u1i)
-            + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
-            + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
-            + ai*inner(wi,u1r)
-            + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
-        )*dx
+
+        solver = 'new'
+        if solver == 'new':
+
+            def L_op(u, h, v, q):
+                lform = -dt*f*inner(v,perp(u))*dx
+                lform += dt*g*div(v)*h*dx
+                lform += -dt*H*q*div(u)*dx
+                return lform
+
+            def inner_m(u, h, v, q):
+                return inner(u,v)*dx + h*q*dx
+
+            # (1            sgn(ai))*(ar + L    -ai   )
+            # (-sgn(ai)           1) (ai        ar + L)
+
+            # (1,1) block
+            a = (ar + abs(ai))*inner_m(u1r, h1r, wr, phr)
+            a += L_op(u1r, h1r, wr, phr)
+            # (1,2) block
+            a += (-ai + sign(ai)*ar)*inner_m(u1i, h1i, wr, phr)
+            a += sign(ai)*L_op(u1i, h1i, wr, phr)
+            # (2,1) block
+            a += (ai - sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
+            a += -sign(ai)*L_op(u1r, h1r, wi, phi)
+            # (2,2) block
+            a = (ar + abs(ai))*inner_m(u1r, h1r, wr, phr)
+            a += L_op(u1r, h1r, wr, phr)
+
+            aP = 
             
-        L = (
-            br*inner(wr,self.u0)*dx
-            + br*phr*self.h0*dx 
-            + bi*inner(wi,self.u0)*dx
-            + bi*phi*self.h0*dx 
-        )
+            myprob = LinearVariationalProblem(a, L, self.w)
 
-        self.w_sum = Function(W)
-        self.w = Function(W)
-        myprob = LinearVariationalProblem(a, L, self.w)
-
-        if(direct_solve):
+            block_parameters = {'ksp_type':'bcgs',
+                                'pc_type':fieldsplit',
+                                'pc_fieldsplit_type': 'additive',
+            }
+            
             self.rexi_solver = LinearVariationalSolver(
-                myprob, solver_parameters=solver_parameters,
+                myprob, solver_parameters=block_parameters,
                 constant_jacobian=False)
+            
         else:
-            #Pack in context variables for the preconditioner
-            appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
-                      'H':H, 'g':g, 'f':f, 'ar':ar,
-                      'ai':ai, 'aimax':aimax, 'perp':perp}
-            self.rexi_solver = LinearVariationalSolver(
-                myprob, solver_parameters=solver_parameters,
-                appctx=appctx)
+            a = (
+                inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
+                - ai*inner(wr,u1i)
+                + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
+                + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
+                + ai*inner(wi,u1r)
+                + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
+            )*dx
+            
+            L = (
+                br*inner(wr,self.u0)*dx
+                + br*phr*self.h0*dx 
+                + bi*inner(wi,self.u0)*dx
+                + bi*phi*self.h0*dx 
+            )
+
+            self.w_sum = Function(W)
+            self.w = Function(W)
+            myprob = LinearVariationalProblem(a, L, self.w)
+            
+            if(direct_solve):
+                self.rexi_solver = LinearVariationalSolver(
+                    myprob, solver_parameters=solver_parameters,
+                    constant_jacobian=False)
+            else:
+                #Pack in context variables for the preconditioner
+                appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
+                          'H':H, 'g':g, 'f':f, 'ar':ar,
+                          'ai':ai, 'aimax':aimax, 'perp':perp}
+                self.rexi_solver = LinearVariationalSolver(
+                    myprob, solver_parameters=solver_parameters,
+                    appctx=appctx)
 
     def solve(self, u0, h0, dt):
         self.u0.assign(u0)
