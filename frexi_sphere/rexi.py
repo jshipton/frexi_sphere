@@ -34,8 +34,8 @@ class REXI_PC(PCBase):
         v, q = TestFunctions(M)
 
         a = (
-            inner(v,u)*(ar - abs(ai)) - dt*f*inner(v,perp(u)) + dt*g*div(v)*h
-            + q*((ar - abs(ai))*h - dt*H*div(u))
+            inner(v,u)*(ar + abs(ai)) - dt*f*inner(v,perp(u)) + dt*g*div(v)*h
+            + q*((ar + abs(ai))*h - dt*H*div(u))
             )*dx
 
         hybridisation_parameters = {'ksp_type': 'preonly',
@@ -74,10 +74,10 @@ class REXI_PC(PCBase):
         ur_RHS, hr_RHS = self.vR.split()
         ui_RHS, hi_RHS = self.vI.split()
         #apply the mixture transformation
-        ur_RHS.assign( ur_in - sign(self.ai)*ui_in )
-        hr_RHS.assign( hr_in - sign(self.ai)*hi_in )
-        ui_RHS.assign( sign(self.ai)*ur_in + ui_in )
-        hi_RHS.assign( sign(self.ai)*hr_in + hi_in )
+        ur_RHS.assign( ur_in + sign(self.ai)*ui_in )
+        hr_RHS.assign( hr_in + sign(self.ai)*hi_in )
+        ui_RHS.assign( -sign(self.ai)*ur_in + ui_in )
+        hi_RHS.assign( -sign(self.ai)*hr_in + hi_in )
         #apply the solvers
         self.pc_solver.solve(self.uR, self.vR)
         self.pc_solver.solve(self.uI, self.vI)
@@ -128,7 +128,7 @@ class Rexi(object):
                                  'pc_type':'lu',
                                  'pc_factor_mat_solver_package': 'mumps'}
         else:
-            solver_parameters = {"ksp_type": "gmres",
+            solver_parameters = {"ksp_type": "bcgs",
                                  "ksp_converged_reason": True,
                                  "mat_type":"matfree",
                                  "pc_type": "python",
