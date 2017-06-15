@@ -177,17 +177,36 @@ class Rexi(object):
             a += (ai - sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
             a += -sign(ai)*L_op(u1r, h1r, wi, phi)
             # (2,2) block
-            a = (ar + abs(ai))*inner_m(u1r, h1r, wr, phr)
-            a += L_op(u1r, h1r, wr, phr)
+            a = (ar + abs(ai))*inner_m(u1i, h1i, wi, phi)
+            a += L_op(u1i, h1i, wi, phi)
 
-            aP = 
+            L = (
+                (br + sign(ai)*bi)*(inner(wr,self.u0)*dx
+                                   + phr*self.h0*dx)
+                +(-sign(ai)*br + bi)*(inner(wi,self.u0)*dx
+                                      + phi*self.h0*dx)
+            )
             
-            myprob = LinearVariationalProblem(a, L, self.w)
+            aP = (ar + abs(ai))*inner(u1r, wr)
+            aP += -dt*f*inner(wr,perp(u1r))*dx
+            #... IP term goes here
+            aP = (ar + abs(ai))*inner(u1i, wi)
+            aP += -dt*f*inner(wi,perp(u1i))*dx
+            #... IP term goes here
+            
+            myprob = LinearVariationalProblem(a, L, aP=aP, self.w)
 
             block_parameters = {'ksp_type':'bcgs',
                                 'pc_type':fieldsplit',
                                 'pc_fieldsplit_type': 'additive',
-            }
+                                'fieldsplit_0_ksp_type':'preonly',
+                                'fieldsplit_1_ksp_type':'preonly',
+                                'fieldsplit_2_ksp_type':'preonly',
+                                'fieldsplit_3_ksp_type':'preonly',
+                                'fieldsplit_0_pc_type':'ilu',
+                                'fieldsplit_1_pc_type':'hypre',
+                                'fieldsplit_2_pc_type':'ilu',
+                                'fieldsplit_3_pc_type':'hypre'}
             
             self.rexi_solver = LinearVariationalSolver(
                 myprob, solver_parameters=block_parameters,
