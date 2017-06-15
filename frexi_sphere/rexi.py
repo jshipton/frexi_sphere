@@ -1,4 +1,5 @@
 from firedrake import *
+import numpy
 
 class REXI_PC(PCBase):
     def initialize(self, pc):
@@ -15,6 +16,7 @@ class REXI_PC(PCBase):
         f = aapctx['f']
         ar = aapctx['ar']
         ai = aapctx['ai']
+        aimax = aapctx['aimax']
         perp = aapctx['perp']
 
         self.y_fn = Function(W)
@@ -27,28 +29,28 @@ class REXI_PC(PCBase):
         self.uR = Function(M)
         self.uI = Function(M)
         
-        self.ar = ar
-        self.ai = ai
+        self.aimax = aimax
 
         u, h = TrialFunctions(M)
         v, q = TestFunctions(M)
 
         a = (
-            inner(v,u)*(ar + abs(ai)) - dt*f*inner(v,perp(u)) + dt*g*div(v)*h
-            + q*((ar + abs(ai))*h - dt*H*div(u))
+            inner(v,u)*(ar + abs(aimax)) - dt*f*inner(v,perp(u)) + dt*g*div(v)*h
+            + q*((ar + abs(aimax))*h - dt*H*div(u))
             )*dx
 
         hybridisation_parameters = {'ksp_type': 'preonly',
                                     'ksp_monitor': True,
                                     'mat_type': 'matfree',
                                     'pc_type': 'python',
-                                    'hybridization_ksp_monitor': True,
                                     'pc_python_type': 'firedrake.HybridizationPC',
-                                    'hybridization_hdiv_residual_ksp_type': 'preonly',
-                                    'hybridization_hdiv_residual_ksp_type': 'ilu',
-                                    'hybridization_ksp_type': 'preonly',
-                                    'hybridization_pc_type': 'ilu',
-                                    'hybridization_projector_tolerance': 1.0e-14}
+                                    'hybridization': {'ksp_type': 'preonly',
+                                                      'ksp_monitor': True,
+                                                      'pc_type': 'hypre',
+                                                      'hdiv_residual_ksp_type': 'preonly',
+                                                      'hdiv_residual_pc_type': 'sor', 
+                                                      'hdiv_projection_ksp_type': 'preonly',
+                                                      'hdiv_projection_pc_type': 'sor'}}
 
         lu_parameters = {'ksp_type':'preonly',
                          'pc_type':'lu',
@@ -62,22 +64,22 @@ class REXI_PC(PCBase):
         raise NotImplementedError('We do not provide a transpose')
 
     def update(self, pc):
-        print "Update"
-        raise NotImplementedError('We do not provide an update')
+        """Preconditioner is always the same."""
+        pass
 
     def apply(self, pc, y, x):
 
         with self.y_fn.dat.vec as yvec:
-            yvec.array[:] = y.array[:]
+            y.copy(yvec)
 
         ur_in, hr_in, ui_in, hi_in = self.y_fn.split()
         ur_RHS, hr_RHS = self.vR.split()
         ui_RHS, hi_RHS = self.vI.split()
         #apply the mixture transformation
-        ur_RHS.assign( ur_in + sign(self.ai)*ui_in )
-        hr_RHS.assign( hr_in + sign(self.ai)*hi_in )
-        ui_RHS.assign( -sign(self.ai)*ur_in + ui_in )
-        hi_RHS.assign( -sign(self.ai)*hr_in + hi_in )
+        ur_RHS.assign( ur_in + sign(self.aimax)*ui_in )
+        hr_RHS.assign( hr_in + sign(self.aimax)*hi_in )
+        ui_RHS.assign( -sign(self.aimax)*ur_in + ui_in )
+        hi_RHS.assign( -sign(self.aimax)*hr_in + hi_in )
         #apply the solvers
         self.pc_solver.solve(self.uR, self.vR)
         self.pc_solver.solve(self.uI, self.vI)
@@ -91,7 +93,8 @@ class REXI_PC(PCBase):
         hi_out.assign(hi)
 
         with self.x_fn.dat.vec_ro as xvec:
-            x.array[:] = xvec.array[:]
+            xvec.copy(x)
+
 
 class Rexi(object):
 
@@ -134,43 +137,53 @@ class Rexi(object):
                                  "pc_type": "python",
                                  "pc_python_type": "rexi.REXI_PC"}
 
-        for i in range(len(alpha)):
-            ai = Constant(alpha[i].imag)
-            bi = Constant(beta_re[i].imag)
-            ar = Constant(alpha[i].real)
-            br = Constant(beta_re[i].real)
-            
-            a = (
-                inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
-                - ai*inner(wr,u1i)
-                + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
-                + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
-                + ai*inner(wi,u1r)
-                + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
-            )*dx
-            
-            L = (
-                br*inner(wr,self.u0)*dx
-                + br*phr*self.h0*dx 
-                + bi*inner(wi,self.u0)*dx
-                + bi*phi*self.h0*dx 
-            )
+        ai = Constant(alpha[0].imag)
+        bi = Constant(beta_re[0].imag)
+        ar = Constant(alpha[0].real)
+        br = Constant(beta_re[0].real)
 
-            self.w_sum = Function(W)
-            self.w = Function(W)
-            myprob = LinearVariationalProblem(a, L, self.w)
+        aimax = numpy.array(alpha).imag.max()
 
-            if(direct_solve):
-                self.rexi_solver.append(LinearVariationalSolver(
-                    myprob, solver_parameters=solver_parameters))
-            else:
-                #Pack in context variables for the preconditioner
-                appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
-                          'H':H, 'g':g, 'f':f, 'ar':ar,
-                          'ai':ai, 'perp':perp}
-                self.rexi_solver.append(LinearVariationalSolver(
-                    myprob, solver_parameters=solver_parameters,
-                                        appctx=appctx))
+        self.alpha = alpha
+        self.beta_re = beta_re
+
+        self.ai = ai
+        self.ar = ar
+        self.bi = bi
+        self.br = br
+        
+        a = (
+            inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
+            - ai*inner(wr,u1i)
+            + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
+            + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
+            + ai*inner(wi,u1r)
+            + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
+        )*dx
+            
+        L = (
+            br*inner(wr,self.u0)*dx
+            + br*phr*self.h0*dx 
+            + bi*inner(wi,self.u0)*dx
+            + bi*phi*self.h0*dx 
+        )
+
+        self.w_sum = Function(W)
+        self.w = Function(W)
+        myprob = LinearVariationalProblem(a, L, self.w)
+
+        if(direct_solve):
+            self.rexi_solver = LinearVariationalSolver(
+                myprob, solver_parameters=solver_parameters,
+                constant_jacobian=False)
+        else:
+            #Pack in context variables for the preconditioner
+            appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
+                      'H':H, 'g':g, 'f':f, 'ar':ar,
+                      'ai':ai, 'aimax':aimax, 'perp':perp}
+            self.rexi_solver = LinearVariationalSolver(
+                myprob, solver_parameters=solver_parameters,
+                appctx=appctx)
 
     def solve(self, u0, h0, dt):
         self.u0.assign(u0)
@@ -178,8 +191,12 @@ class Rexi(object):
         self.dt.assign(dt)
 
         self.w_sum.assign(0.)
-        for i in range(len(self.rexi_solver)):
-            self.rexi_solver[i].solve()
+        for i in len(self.alpha)):
+            self.ar.assign(self.alpha[i].real)
+            self.ai.assign(self.alpha[i].imag)
+            self.br.assign(self.beta_re[i].real)
+            self.bi.assign(self.beta_re[i].imag)
+            self.rexi_solver.solve()
             self.w_sum += self.w
 
         return self.w_sum

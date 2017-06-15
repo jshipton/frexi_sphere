@@ -5,7 +5,7 @@ import frexi_sphere.diagnostics
 import frexi_sphere.timestepping
 from os import path
 import json
-
+parameters["pyop2_options"]["lazy_evaluation"] = False
 # set up mesh and initial conditions for Williamson 2 testcase
 R = 6371220.
 ref_level = 3
