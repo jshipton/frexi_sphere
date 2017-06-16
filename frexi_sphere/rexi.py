@@ -186,18 +186,33 @@ class Rexi(object):
                 +(-sign(ai)*br + bi)*(inner(wi,self.u0)*dx
                                       + phi*self.h0*dx)
             )
+
+            #a u - dt * f * perp (u) - dt * g * grad h = 0
+            #a h - dt * H * div (u) = R_h
+            #assume f constant, then
+            #a grad(phi) + dt*f*grad(psi) - dt*g*grad(h) = 0
+            #a gradperp(psi) - dt*f*gradperp(phi) = 0
+            #a grad(psi) = dt*f*grad(phi)
+            #grad(phi) + (dt*f/a)**2*grad(phi) - dt*g/a*grad(h) = 0
+            #grad(phi) = dt*g/a/(1 + (dt*f/a)**2)*grad(h)
+            #a h - div(dt**2*H*g/a/(1+ (dt*f/a)**2)*grad(h)) = R_h
+
+            ac = ar*abs(ai)
+            sigma = dt**2*H*g/ac/(1+ (dt*f/ac)**2)
             
             aP = (ar + abs(ai))*inner(u1r, wr)
             aP += -dt*f*inner(wr,perp(u1r))*dx
-            #... IP term goes here
+            aP += (ac*phr*h1r + inner(grad(phr),sigma*grad(h1r)))*dx
+            aP += IPcoeff*jump(phr)*jump(h1r)*dS
             aP = (ar + abs(ai))*inner(u1i, wi)
             aP += -dt*f*inner(wi,perp(u1i))*dx
-            #... IP term goes here
+            aP += (ac*phi*h1i + inner(grad(phi),sigma*grad(h1i)))*dx
+            aP += IPcoeff*jump(phi)*jump(h1i)*dS
             
             myprob = LinearVariationalProblem(a, L, aP=aP, self.w)
 
             block_parameters = {'ksp_type':'bcgs',
-                                'pc_type':fieldsplit',
+                                'pc_type':'fieldsplit',
                                 'pc_fieldsplit_type': 'additive',
                                 'fieldsplit_0_ksp_type':'preonly',
                                 'fieldsplit_1_ksp_type':'preonly',
