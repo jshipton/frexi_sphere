@@ -243,7 +243,7 @@ class Rexi(object):
             
             myprob = LinearVariationalProblem(a, L, self.w) #, aP=aP)
 
-            block_parameters = {'ksp_type':'gmres',
+            two_block_parameters = {'ksp_type':'gmres',
                                 'pc_type':'fieldsplit',
                                 'mat_type':'aij',
                                 'ksp_monitor':False,
@@ -259,9 +259,27 @@ class Rexi(object):
                                 'mumps',
                                 'fieldsplit_1_pc_factor_mat_solver_package': 
                                 'mumps'}
+
+            four_block_parameters = {'ksp_type':'gmres',
+                                     'pc_type':'fieldsplit',
+                                     'ksp_monitor':True,
+                                     'ksp_converged_reason':True,
+                                     'pc_fieldsplit_type': 'multiplicative',
+                                     'pc_fieldsplit_0_fields':'1',
+                                     'pc_fieldsplit_1_fields':'3',
+                                     'pc_fieldsplit_0_fields':'0',
+                                     'pc_fieldsplit_1_fields':'2',
+                                     'fieldsplit_0_ksp_type':'preonly',
+                                     'fieldsplit_1_ksp_type':'preonly',
+                                     'fieldsplit_2_ksp_type':'preonly',
+                                     'fieldsplit_3_ksp_type':'preonly',
+                                     'fieldsplit_0_pc_type':'lu',
+                                     'fieldsplit_1_pc_type':'lu',
+                                     'fieldsplit_2_pc_type':'lu',
+                                     'fieldsplit_3_pc_type':'lu'}
             
             self.rexi_solver = LinearVariationalSolver(
-                myprob, solver_parameters=block_parameters,
+                myprob, solver_parameters=four_block_parameters,
                 constant_jacobian=False)
             
         else:
