@@ -3,6 +3,7 @@ from frexi_sphere.exponential_integrators import SSPRK2V
 from frexi_sphere.sw_setup import SetupShallowWater
 import frexi_sphere.diagnostics
 import frexi_sphere.timestepping
+import numpy
 from os import path
 import json
 parameters["pyop2_options"]["lazy_evaluation"] = False
@@ -33,7 +34,9 @@ M = 64
 
 # make timestepper
 direct = False
-timestepper = SSPRK2V(setup, dt, direct, h, M, False)
+ncells = 20*4**ref_level
+dx0 = numpy.pi*4*R**2/ncells
+timestepper = SSPRK2V(setup, dt, direct, h, M, False, IPcoeff=10*ncells)
 
 # output file and output fields
 dirname = 'SSPRK2V_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)
