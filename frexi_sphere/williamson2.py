@@ -36,7 +36,7 @@ M = 64
 direct = False
 ncells = 20*4**ref_level
 dx0 = numpy.pi*4*R**2/ncells
-timestepper = SSPRK2V(setup, dt, direct, h, M, False, IPcoeff=10*ncells)
+timestepper = SSPRK2V(setup, dt, direct, h, M, False, IPcoeff=10/dx0)
 
 # output file and output fields
 dirname = 'SSPRK2V_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)

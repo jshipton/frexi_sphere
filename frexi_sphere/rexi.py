@@ -216,7 +216,7 @@ class Rexi(object):
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
 
-            block_parameters = {'ksp_type':'bcgs',
+            block_parameters = {'ksp_type':'gmres',
                                 'pc_type':'fieldsplit',
                                 'ksp_monitor':True,
                                 'pc_fieldsplit_type': 'multiplicative',
