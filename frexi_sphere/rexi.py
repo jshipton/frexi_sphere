@@ -232,11 +232,11 @@ class Rexi(object):
             #grad(phi) = dt*g/a/(1 + (dt*f/a)**2)*grad(h)
             #a h - div(dt**2*H*g/a/(1+ (dt*f/a)**2)*grad(h)) = R_h
             
-            aP = (ar + abs(ai))*inner(u1r, wr)*dx
+            aP = ac*inner(u1r, wr)*dx
             aP += -dt*f*inner(wr,perp(u1r))*dx
             aP += (ac*phr*h1r + inner(grad(phr),sigma*grad(h1r)))*dx
             aP += IPcoeff*sigma*jump(phr)*jump(h1r)*dS
-            aP += (ar + abs(ai))*inner(u1i, wi)*dx
+            aP += ac*inner(u1i, wi)*dx
             aP += -dt*f*inner(wi,perp(u1i))*dx
             aP += (ac*phi*h1i + inner(grad(phi),sigma*grad(h1i)))*dx
             aP += IPcoeff*sigma*jump(phi)*jump(h1i)*dS
