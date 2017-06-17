@@ -196,7 +196,7 @@ class Rexi(object):
         self.test_solver = LinearVariationalSolver(test_prob,
                                                    solver_parameters=ip_params)
         
-        solver = 'old'
+        solver = 'new'
         if solver == 'new':
 
             # (1            sgn(ai))*(ar + L    -ai   )
@@ -212,7 +212,7 @@ class Rexi(object):
             a += (ai - sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
             a += -sign(ai)*L_op(u1r, h1r, wi, phi)
             # (2,2) block
-            a = (ar + abs(ai))*inner_m(u1i, h1i, wi, phi)
+            a += (ar + abs(ai))*inner_m(u1i, h1i, wi, phi)
             a += L_op(u1i, h1i, wi, phi)
 
             L = (
@@ -241,20 +241,24 @@ class Rexi(object):
             aP += (ac*phi*h1i + inner(grad(phi),sigma*grad(h1i)))*dx
             aP += IPcoeff*sigma*jump(phi)*jump(h1i)*dS
             
-            myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
+            myprob = LinearVariationalProblem(a, L, self.w) #, aP=aP)
 
             block_parameters = {'ksp_type':'gmres',
                                 'pc_type':'fieldsplit',
-                                'ksp_monitor':True,
+                                'mat_type':'aij',
+                                'ksp_monitor':False,
+                                'ksp_converged_reason':True,
                                 'pc_fieldsplit_type': 'multiplicative',
+                                'pc_fieldsplit_0_fields':'0,1',
+                                'pc_fieldsplit_1_fields':'2,3',
                                 'fieldsplit_0_ksp_type':'preonly',
                                 'fieldsplit_1_ksp_type':'preonly',
-                                'fieldsplit_2_ksp_type':'preonly',
-                                'fieldsplit_3_ksp_type':'preonly',
                                 'fieldsplit_0_pc_type':'lu',
                                 'fieldsplit_1_pc_type':'lu',
-                                'fieldsplit_2_pc_type':'lu',
-                                'fieldsplit_3_pc_type':'lu'}
+                                'fieldsplit_0_pc_factor_mat_solver_package': 
+                                'mumps',
+                                'fieldsplit_1_pc_factor_mat_solver_package': 
+                                'mumps'}
             
             self.rexi_solver = LinearVariationalSolver(
                 myprob, solver_parameters=block_parameters,
@@ -303,7 +307,7 @@ class Rexi(object):
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
             self.bi.assign(self.beta_re[i].imag)
-            self.test_solver.solve()
+            # self.test_solver.solve()
             self.rexi_solver.solve()
             self.w_sum += self.w
 
