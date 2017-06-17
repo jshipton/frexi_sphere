@@ -154,18 +154,50 @@ class Rexi(object):
 
         self.w_sum = Function(W)
         self.w = Function(W)
+
+        def L_op(u, h, v, q):
+            lform = -dt*f*inner(v,perp(u))*dx
+            lform += dt*g*div(v)*h*dx
+            lform += -dt*H*q*div(u)*dx
+            return lform
+
+        def inner_m(u, h, v, q):
+            return inner(u,v)*dx + h*q*dx
+
+        ac = ar + abs(aimax)
+        sigma = dt**2*H*g/ac/(1+ (dt*f/ac)**2)
         
-        solver = 'new'
+        IPcoeff = Constant(IPcoeff)
+        
+        "some test code here!"
+        Ws = MixedFunctionSpace((V1,V2))
+        us, hs = TrialFunctions(Ws)
+        ws,phs = TestFunctions(Ws)
+        a = (ar + abs(ai))*inner_m(us, hs, ws, phs)
+        a += L_op(us, hs, ws, phs)
+        aP = ac*inner_m(us, hs, ws, phs)
+        aP += -dt*f*inner(ws,perp(us))*dx
+        aP += (ac*phs*hs + inner(grad(phs),sigma*grad(hs)))*dx
+        aP += IPcoeff*sigma*jump(phs)*jump(hs)*dS
+        L = (
+            (br + sign(ai)*bi)*(inner(ws,self.u0)*dx
+                                + phs*self.h0*dx))        
+        ws0 = Function(Ws)
+        ip_params = {'ksp_type':'gmres',
+                     'pc_type':'fieldsplit',
+                     'ksp_monitor':True,
+                     'pc_fieldsplit_0_fields':'1',
+                     'pc_fieldsplit_1_fields':'0',
+                     'fieldsplit_0_ksp_type':'preonly',
+                     'fieldsplit_1_ksp_type':'preonly',
+                     'fieldsplit_0_pc_type':'lu',
+                     'fieldsplit_1_pc_type':'lu'}
+        test_prob = LinearVariationalProblem(a,L,ws0,aP=aP)
+        self.test_solver = LinearVariationalSolver(test_prob,
+                                                   solver_parameters=ip_params)
+        
+        solver = 'old'
         if solver == 'new':
-
-            def L_op(u, h, v, q):
-                lform = -dt*f*inner(v,perp(u))*dx
-                lform += dt*g*div(v)*h*dx
-                lform += -dt*H*q*div(u)*dx
-                return lform
-
-            def inner_m(u, h, v, q):
-                return inner(u,v)*dx + h*q*dx
 
             # (1            sgn(ai))*(ar + L    -ai   )
             # (-sgn(ai)           1) (ai        ar + L)
@@ -199,11 +231,6 @@ class Rexi(object):
             #grad(phi) + (dt*f/a)**2*grad(phi) - dt*g/a*grad(h) = 0
             #grad(phi) = dt*g/a/(1 + (dt*f/a)**2)*grad(h)
             #a h - div(dt**2*H*g/a/(1+ (dt*f/a)**2)*grad(h)) = R_h
-
-            ac = ar*abs(ai)
-            sigma = dt**2*H*g/ac/(1+ (dt*f/ac)**2)
-
-            IPcoeff = Constant(IPcoeff)
             
             aP = (ar + abs(ai))*inner(u1r, wr)*dx
             aP += -dt*f*inner(wr,perp(u1r))*dx
@@ -276,6 +303,7 @@ class Rexi(object):
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
             self.bi.assign(self.beta_re[i].imag)
+            self.test_solver.solve()
             self.rexi_solver.solve()
             self.w_sum += self.w
 
