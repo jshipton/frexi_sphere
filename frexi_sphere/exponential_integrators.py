@@ -10,10 +10,10 @@ class LinearExponentialIntegrator(object):
     shallow water equations.
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
+    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, IPcoeff=0.):
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
         self.coefficients = alpha, beta_re
-        self.rexi = Rexi(setup, direct_solve, self.coefficients)
+        self.rexi = Rexi(setup, direct_solve, self.coefficients, IPcoeff)
 
     def apply(self, dt, u_in, h_in, u_out, h_out):
         w = self.rexi.solve(u_in, h_in, dt)
@@ -29,8 +29,8 @@ class NonlinearExponentialIntegrator(LinearExponentialIntegrator):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, nonlinear=True):
-        super(NonlinearExponentialIntegrator, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, nonlinear=True,IPcoeff=0.):
+        super(NonlinearExponentialIntegrator, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half, IPcoeff=0.)
         self.dt = dt
         H = Constant(setup.params.H)
         V1 = setup.spaces['u']
@@ -164,8 +164,8 @@ class SSPRK2V(NonlinearExponentialIntegrator):
     u^{n+1} = exp(dtL)u^n + dt/2(exp(dtL)N(u^n) + N(exp(dtL)u*))
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        super(SSPRK2V, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, IPcoeff=0.):
+        super(SSPRK2V, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half, IPcoeff)
         self.ustar = Function(setup.spaces["u"])
         self.hstar = Function(setup.spaces["h"])
         self.u1 = Function(setup.spaces["u"])
