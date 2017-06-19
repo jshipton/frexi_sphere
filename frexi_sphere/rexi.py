@@ -241,7 +241,7 @@ class Rexi(object):
             aP += (ac*phi*h1i + inner(grad(phi),sigma*grad(h1i)))*dx
             aP += IPcoeff*sigma*jump(phi)*jump(h1i)*dS
             
-            myprob = LinearVariationalProblem(a, L, self.w) #, aP=aP)
+            myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
 
             two_block_parameters = {'ksp_type':'gmres',
                                 'pc_type':'fieldsplit',
@@ -273,10 +273,10 @@ class Rexi(object):
                                      'fieldsplit_1_ksp_type':'preonly',
                                      'fieldsplit_2_ksp_type':'preonly',
                                      'fieldsplit_3_ksp_type':'preonly',
-                                     'fieldsplit_0_pc_type':'lu',
-                                     'fieldsplit_1_pc_type':'lu',
-                                     'fieldsplit_2_pc_type':'lu',
-                                     'fieldsplit_3_pc_type':'lu'}
+                                     'fieldsplit_0_pc_type':'ilu',
+                                     'fieldsplit_1_pc_type':'ilu',
+                                     'fieldsplit_2_pc_type':'ilu',
+                                     'fieldsplit_3_pc_type':'ilu'}
             
             self.rexi_solver = LinearVariationalSolver(
                 myprob, solver_parameters=four_block_parameters,
@@ -321,6 +321,7 @@ class Rexi(object):
 
         self.w_sum.assign(0.)
         for i in range(len(self.alpha)):
+            print "in the loop", i
             self.ar.assign(self.alpha[i].real)
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
