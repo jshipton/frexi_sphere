@@ -12,14 +12,18 @@ class LinearExponentialIntegrator(object):
     """
 
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half,
-                 IPcoeff=0.):
+                 IPcoeff=None):
         self.dt = dt
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
         self.coefficients = alpha, beta_re
         self.rexi = Rexi(setup, direct_solve, self.coefficients, IPcoeff)
 
-    def apply(self, u_in, h_in, u_out, h_out):
-        w = self.rexi.solve(u_in, h_in, self.dt)
+    def apply(self, u_in, h_in, u_out, h_out, dt=None):
+        # This is here because we usually want to use dt, but sometimes
+        # we need to use 0.5dt or some other value.
+        if dt is None:
+            dt = self.dt
+        w = self.rexi.solve(u_in, h_in, dt)
         ur, hr, _, _ = w.split()
         u_out.assign(ur)
         h_out.assign(hr)
@@ -115,10 +119,10 @@ class ETD1(NonlinearExponentialIntegrator):
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 1, reduce_to_half)
         self.phi1_coefficients = alpha, beta_re
 
-    def apply(self, dt, u_in, h_in, u_out, h_out):
+    def apply(self, u_in, h_in, u_out, h_out):
 
         # calculate exp(dt L)U0
-        super(ETD1, self).apply(dt, u_in, h_in, u_out, h_out)
+        super(ETD1, self).apply(u_in, h_in, u_out, h_out)
 
         # calculate N(U0)
         self.u0.assign(u_in)
@@ -153,10 +157,10 @@ class ETD2RK(ETD1):
         alpha, beta_re, _ = RexiCoefficients(h, M, 2, reduce_to_half)
         self.phi2_coefficients = alpha, beta_re
 
-    def apply(self, dt, u_in, h_in, u_out, h_out):
+    def apply(self, u_in, h_in, u_out, h_out):
 
         # calculate A
-        super(ETD2RK, self).apply(dt, u_in, h_in, self.au, self.ah)
+        super(ETD2RK, self).apply(u_in, h_in, self.au, self.ah)
 
         # save N(U)
         Nu, Nh = self.Nw.split()
@@ -207,16 +211,15 @@ class SSPRK2V(NonlinearExponentialIntegrator):
         self.hstar = h_in + dt*Nh
 
         # calculate exp(dtL)U^n
-        super(SSPRK2V, self).apply(dt, u_in, h_in, u_out, h_out)
+        super(SSPRK2V, self).apply(u_in, h_in, u_out, h_out)
 
         # calculate exp(dtL)N(u^n)
-        super(SSPRK2V, self).apply(dt, Nu, Nh, self.u1, self.h1)
+        super(SSPRK2V, self).apply(Nu, Nh, self.u1, self.h1)
         u_out += 0.5*dt*self.u1
         h_out += 0.5*dt*self.h1
 
         # calculate N(exp(dtL)u*)
-        super(SSPRK2V, self).apply(
-            dt, self.ustar, self.hstar, self.u1, self.h1)
+        super(SSPRK2V, self).apply(self.ustar, self.hstar, self.u1, self.h1)
         self.u0.assign(self.u1)
         self.h0.assign(self.h1)
         self.nonlinear_solver.solve()
@@ -255,17 +258,17 @@ class ETDRK4V(NonlinearExponentialIntegrator):
         Nu, Nh = self.Nw.split()
 
         # calculate exp(dtL)U^n
-        super(ETDRK4V, self).apply(dt, u_in, h_in, u_out, h_out)
+        super(ETDRK4V, self).apply(u_in, h_in, u_out, h_out)
 
         # calculate exp(0.5dtL)U^n
-        super(ETDRK4V, self).apply(0.5*dt, u_in, h_in, u_tmp, h_tmp)
+        super(ETDRK4V, self).apply(u_in, h_in, u_tmp, h_tmp, 0.5*dt)
         self.u1.assign(u_tmp)
         self.h1.assign(h_tmp)
         self.u2.assign(u_tmp)
         self.h2.assign(h_tmp)
 
         # calculate exp(dtL)N(u^n) and U1
-        super(ETDRK4V, self).apply(dt, Nu, Nh, expNu, expNh)
+        super(ETDRK4V, self).apply(Nu, Nh, expNu, expNh)
         self.u1 += 0.5*dt*expNu
         self.h1 += 0.5*dt*expNh
 
@@ -284,7 +287,7 @@ class ETDRK4V(NonlinearExponentialIntegrator):
         self.h0.assign(self.h2)
         self.nonlinear_solver.solve()
         Nu2, Nh2 = self.Nw.split()
-        super(ETDRK4V, self).apply(0.5*dt, Nu2, Nh2, u_tmp, h_tmp)
+        super(ETDRK4V, self).apply(Nu2, Nh2, u_tmp, h_tmp, 0.5*dt)
         self.u3 += dt*u_tmp
         self.h3 += dt*h_tmp
 
@@ -330,27 +333,26 @@ class CoarsePropagator(NonlinearExponentialIntegrator):
         # stage 1 of midpoint method
         for i, s in enumerate(self.sn):
             super(CoarsePropagator, self).apply(
-                s, u0, h0, self.u_tmp, self.h_tmp)
+                u0, h0, self.u_tmp, self.h_tmp, s)
             self.u0.assign(self.u_tmp)
             self.h0.assign(self.h_tmp)
             self.nonlinear_solver.solve()
             Nu, Nh = self.Nw.split()
             super(CoarsePropagator, self).apply(
-                -s, Nu, Nh, self.u_tmp, self.h_tmp)
+                Nu, Nh, self.u_tmp, self.h_tmp, -s)
             self.u1 += 0.5*self.dt*Constant(rho_sn[i])*self.u_tmp
             self.h1 += 0.5*self.dt*Constant(rho_sn[i])*self.h_tmp
 
         # stage 2 of midpoint method
         for i, s in enumerate(self.sn):
             super(CoarsePropagator, self).apply(
-                s, self.u1, self.h1, self.u_tmp, self.h_tmp)
+                self.u1, self.h1, self.u_tmp, self.h_tmp, s)
             self.u0.assign(self.u_tmp)
             self.h0.assign(self.h_tmp)
             self.nonlinear_solver.solve()
             Nu, Nh = self.Nw.split()
             super(CoarsePropagator, self).apply(
-                -s, Nu, Nh, self.u_tmp, self.h_tmp)
+                Nu, Nh, self.u_tmp, self.h_tmp, -s)
             u_out += self.dt*Constant(rho_sn[i])*self.u_tmp
             h_out += self.dt*Constant(rho_sn[i])*self.h_tmp
-        super(CoarsePropagator, self).apply(
-            self.dt, u_out, h_out, u_out, h_out)
+        super(CoarsePropagator, self).apply(u_out, h_out, u_out, h_out)

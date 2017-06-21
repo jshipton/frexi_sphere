@@ -102,7 +102,7 @@ class REXI_PC(PCBase):
 
 class Rexi(object):
 
-    def __init__(self, setup, direct_solve, rexi_coefficients, IPcoeff=0.):
+    def __init__(self, setup, direct_solve, rexi_coefficients, IPcoeff=None):
 
         alpha, beta_re = rexi_coefficients
 
@@ -150,57 +150,58 @@ class Rexi(object):
         bi = self.bi
         br = self.br
 
-        aimax = numpy.array(alpha).imag.max()
-
         self.alpha = alpha
         self.beta_re = beta_re
 
         self.w_sum = Function(W)
         self.w = Function(W)
 
-        def L_op(u, h, v, q):
-            lform = -dt*f*inner(v, perp(u))*dx
-            lform += dt*g*div(v)*h*dx
-            lform += -dt*H*q*div(u)*dx
-            return lform
-
-        def inner_m(u, h, v, q):
-            return inner(u, v)*dx + h*q*dx
-
-        ac = ar + abs(aimax)
-        sigma = dt**2*H*g/ac/(1 + (dt*f/ac)**2)
-
-        IPcoeff = Constant(IPcoeff)
-
-        "some test code here!"
-        Ws = MixedFunctionSpace((V1, V2))
-        us, hs = TrialFunctions(Ws)
-        ws, phs = TestFunctions(Ws)
-        a = (ar + abs(ai))*inner_m(us, hs, ws, phs)
-        a += L_op(us, hs, ws, phs)
-        aP = ac*inner_m(us, hs, ws, phs)
-        aP += -dt*f*inner(ws, perp(us))*dx
-        aP += (ac*phs*hs + inner(grad(phs), sigma*grad(hs)))*dx
-        aP += IPcoeff*sigma*jump(phs)*jump(hs)*dS
-        L = (
-            (br + sign(ai)*bi)*(inner(ws, self.u0)*dx
-                                + phs*self.h0*dx))
-        ws0 = Function(Ws)
-        ip_params = {'ksp_type': 'gmres',
-                     'pc_type': 'fieldsplit',
-                     'ksp_monitor': True,
-                     'pc_fieldsplit_0_fields': '1',
-                     'pc_fieldsplit_1_fields': '0',
-                     'fieldsplit_0_ksp_type': 'preonly',
-                     'fieldsplit_1_ksp_type': 'preonly',
-                     'fieldsplit_0_pc_type': 'lu',
-                     'fieldsplit_1_pc_type': 'lu'}
-        test_prob = LinearVariationalProblem(a, L, ws0, aP=aP)
-        self.test_solver = LinearVariationalSolver(test_prob,
-                                                   solver_parameters=ip_params)
-
         solver = 'new'
         if solver == 'new' and not(direct_solve):
+            assert(IPcoeff is not None)
+
+            aimax = numpy.array(alpha).imag.max()
+
+            def L_op(u, h, v, q):
+                lform = -dt*f*inner(v, perp(u))*dx
+                lform += dt*g*div(v)*h*dx
+                lform += -dt*H*q*div(u)*dx
+                return lform
+
+            def inner_m(u, h, v, q):
+                return inner(u, v)*dx + h*q*dx
+
+            ac = ar + abs(aimax)
+            sigma = dt**2*H*g/ac/(1 + (dt*f/ac)**2)
+
+            IPcoeff = Constant(IPcoeff)
+
+            "some test code here!"
+            Ws = MixedFunctionSpace((V1, V2))
+            us, hs = TrialFunctions(Ws)
+            ws, phs = TestFunctions(Ws)
+            a = (ar + abs(ai))*inner_m(us, hs, ws, phs)
+            a += L_op(us, hs, ws, phs)
+            aP = ac*inner_m(us, hs, ws, phs)
+            aP += -dt*f*inner(ws, perp(us))*dx
+            aP += (ac*phs*hs + inner(grad(phs), sigma*grad(hs)))*dx
+            aP += IPcoeff*sigma*jump(phs)*jump(hs)*dS
+            L = (
+                (br + sign(ai)*bi)*(inner(ws, self.u0)*dx
+                                    + phs*self.h0*dx))
+            ws0 = Function(Ws)
+            ip_params = {'ksp_type': 'gmres',
+                         'pc_type': 'fieldsplit',
+                         'ksp_monitor': True,
+                         'pc_fieldsplit_0_fields': '1',
+                         'pc_fieldsplit_1_fields': '0',
+                         'fieldsplit_0_ksp_type': 'preonly',
+                         'fieldsplit_1_ksp_type': 'preonly',
+                         'fieldsplit_0_pc_type': 'lu',
+                         'fieldsplit_1_pc_type': 'lu'}
+            test_prob = LinearVariationalProblem(a, L, ws0, aP=aP)
+            self.test_solver = LinearVariationalSolver(test_prob,
+                                                       solver_parameters=ip_params)
 
             # (1            sgn(ai))*(ar + L    -ai   )
             # (-sgn(ai)           1) (ai        ar + L)
