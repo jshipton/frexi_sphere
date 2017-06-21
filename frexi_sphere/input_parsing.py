@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from firedrake import *
 import argparse
 
+
 class InputParser(object):
     __metaclass__ = ABCMeta
 
@@ -24,18 +25,18 @@ class InputParser(object):
         if self.args.square is not None:
             L = self.args.square[0]
             n = int(self.args.square[1])
-            print "setting up square mesh of length %s with n %s"%(L, n)
+            print "setting up square mesh of length %s with n %s" % (L, n)
             self.mesh = PeriodicSquareMesh(n, n, L)
         elif self.args.sphere is not None:
             R = self.args.sphere[1]
             ref = int(self.args.sphere[0])
-            print "setting up sphere mesh with radius %s and refinement level %s"%(R, ref)
+            print "setting up sphere mesh with radius %s and refinement level %s" % (R, ref)
             self.mesh = IcosahedralSphereMesh(radius=R, refinement_level=ref, degree=3)
             global_normal = Expression(("x[0]", "x[1]", "x[2]"))
             self.mesh.init_cell_orientations(global_normal)
             self.outward_normals = CellNormal(self.mesh)
         else:
-            print "Geometry not recognised"        
+            print "Geometry not recognised"
 
 
 class RexiArgparser(InputParser):

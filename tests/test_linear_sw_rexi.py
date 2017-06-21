@@ -1,5 +1,6 @@
 from firedrake import *
 from frexi_sphere.exponential_integrators import LinearExponentialIntegrator
+from frexi_sphere.timestepping import Timestepping
 from frexi_sphere.linear_sw_solver import ImplicitMidpointLinearSWSolver
 from frexi_sphere.sw_setup import SetupShallowWater
 import pytest
@@ -18,8 +19,8 @@ def run(dirname, prob, reduce_to_half):
     setup.ics()
     V1 = setup.spaces['u']
     V2 = setup.spaces['h']
-    u0 = Function(V1,name="u").assign(setup.u0)
-    h0 = Function(V2,name="h").assign(setup.h0)
+    u0 = Function(V1, name="u").assign(setup.u0)
+    h0 = Function(V2, name="h").assign(setup.h0)
     rexi_u = Function(V1)
     rexi_h = Function(V2)
 
@@ -29,11 +30,14 @@ def run(dirname, prob, reduce_to_half):
     im.run(t)
     im_h = im.h_end
     im_u = im.u_end
+
     r = LinearExponentialIntegrator(setup, t, True, h, M, reduce_to_half=reduce_to_half)
-    r.apply(u0, h0, rexi_u, rexi_h)
+    stepper = Timestepping(dirname, [u0, h0], setup.params, r)
+    stepper.run(t, t)
     h_err = sqrt(assemble((rexi_h - im_h)*(rexi_h - im_h)*dx))/sqrt(assemble(im_h*im_h*dx))
     u_err = sqrt(assemble(inner(rexi_u-im_u, rexi_u-im_u)*dx))/sqrt(assemble(inner(im_u, im_u)*dx))
     return h_err, u_err
+
 
 @pytest.mark.parametrize("problem", ["wave_scenario", "gaussian_scenario"])
 @pytest.mark.parametrize("reduce_to_half", [True, False])

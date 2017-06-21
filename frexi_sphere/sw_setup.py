@@ -1,5 +1,6 @@
 from firedrake import *
 
+
 class Configuration(object):
 
     def __init__(self, **kwargs):
@@ -10,7 +11,9 @@ class Configuration(object):
     def __setattr__(self, name, value):
         """Cause setting an unknown attribute to be an error"""
         if not hasattr(self, name):
-            raise AttributeError("'%s' object has no attribute '%s'" % (type(self).__name__, name))
+            raise AttributeError(
+                "'%s' object has no attribute '%s'" % (
+                    type(self).__name__, name))
         object.__setattr__(self, name, value)
 
 
@@ -32,7 +35,8 @@ class SetupShallowWater(object):
     """
     def __init__(self, mesh, family, degree, problem_name):
         self.mesh = mesh
-        on_sphere = (mesh.geometric_dimension() == 3 and mesh.topological_dimension() == 2)
+        on_sphere = (mesh.geometric_dimension() == 3 and
+                     mesh.topological_dimension() == 2)
         if on_sphere:
             self.outward_normals = CellNormal(mesh)
         else:
@@ -49,23 +53,27 @@ class SetupShallowWater(object):
     def ex1(self):
         self.params = ShallowWaterParameters(f=1.0, g=1.0, H=1.0)
         x, y = SpatialCoordinate(self.mesh)
-        self.u0.project(as_vector([cos(6*pi*x)*cos(4*pi*y) - 4*sin(6*pi*x)*sin(4*pi*y), cos(6*pi*x)*cos(6*pi*y)]))
-        self.h0.interpolate(sin(6*pi*x)*cos(4*pi*y) - 0.2*cos(4*pi*x)*sin(2*pi*y))
+        self.u0.project(as_vector(
+            [cos(6*pi*x)*cos(4*pi*y) - 4*sin(6*pi*x)*sin(4*pi*y),
+             cos(6*pi*x)*cos(6*pi*y)]))
+        self.h0.interpolate(sin(6*pi*x)*cos(4*pi*y) -
+                            0.2*cos(4*pi*x)*sin(2*pi*y))
+
     def wave_scenario(self):
         self.params = ShallowWaterParameters(f=1.0, g=1.0, H=1.0)
         x, y = SpatialCoordinate(self.mesh)
-        self.u0.project(as_vector([cos(8*pi*x)*cos(2*pi*y), cos(4*pi*x)*cos(4*pi*y)]))
-        self.h0.interpolate(sin(4*pi*x)*cos(2*pi*y) - 0.2*cos(4*pi*x)*sin(4*pi*y))
+        self.u0.project(as_vector(
+            [cos(8*pi*x)*cos(2*pi*y), cos(4*pi*x)*cos(4*pi*y)]))
+        self.h0.interpolate(sin(4*pi*x)*cos(2*pi*y)
+                            - 0.2*cos(4*pi*x)*sin(4*pi*y))
 
     def gaussian_scenario(self):
         self.params = ShallowWaterParameters(f=1.0, g=1.0, H=1.0)
         x, y = SpatialCoordinate(self.mesh)
         self.h0.interpolate(exp(-50*((x-0.5)**2 + (y-0.5)**2)))
 
-
     def polar_wave(self):
         self.params = ShallowWaterParameters()
-        x = SpatialCoordinate(self.mesh)
         R = self.mesh._radius
         Dexpr = Expression("R*acos(fmin(((x[0]*x0 + x[1]*x1 + x[2]*x2)/(R*R)), 1.0)) < rc ? 50.*h0*(1 + cos(pi*R*acos(fmin(((x[0]*x0 + x[1]*x1 + x[2]*x2)/(R*R)), 1.0))/rc)) : 0.0", R=R, rc=R/3., h0=self.params.H, x0=0.0, x1=0.0, x2=R)
         self.h0.interpolate(Dexpr)
@@ -78,7 +86,6 @@ class SetupShallowWater(object):
         fexpr = 2*Omega*x[2]/R
         V = FunctionSpace(self.mesh, "CG", 1)
         self.params.f = Function(V).interpolate(fexpr)
-        day = 24.*60.*60.
         u_0 = 2*pi*R/(12*day)  # Maximum amplitude of the zonal wind (m/s)
         u_max = Constant(u_0)
         uexpr = as_vector([-u_max*x[1]/R, u_max*x[0]/R, 0.0])
@@ -117,7 +124,6 @@ class SetupShallowWater(object):
         fexpr = 2*Omega*x[2]/R
         V = FunctionSpace(self.mesh, "CG", 1)
         self.params.f = Function(V).interpolate(fexpr)
-        day = 24.*60.*60.
         u_0 = 20.
         u_max = Constant(u_0)
         uexpr = as_vector([-u_max*x[1]/R, u_max*x[0]/R, 0.0])

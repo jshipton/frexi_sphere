@@ -7,18 +7,19 @@ mu = params.mu
 L = params.L
 a = params.a
 
+
 def approx_e_ix(x, h, M, use_Gaussian_approx):
     b = b_coefficients(h, M)
 
     sum = 0
     if use_Gaussian_approx:
         for m in range(-M, M+1):
-	    sum += b[m+M] * approxGaussian(x+float(m)*h, h)
+            sum += b[m+M] * approxGaussian(x+float(m)*h, h)
     else:
         alpha, beta_re, beta_im = RexiCoefficients(h, M)
         for n in range(len(alpha)):
-	    denom = (1j*x + alpha[n]);
-	    sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
+            denom = (1j*x + alpha[n])
+            sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
 
     return sum
 
@@ -28,32 +29,35 @@ def approx_phi(x, h, M, n):
 
     sum = 0
     for m in range(-M, M+1):
-	sum += b[m+M] * exp(-((x+m*h)*(x+m*h))/(4.0*h*h))/sqrt(4.0*pi)
+        sum += b[m+M] * exp(-((x+m*h)*(x+m*h))/(4.0*h*h))/sqrt(4.0*pi)
 
     return sum
+
 
 def exact_phi(n, x):
     if n == 1:
         return (exp(1j*x) - 1.)/(1j*x)
     elif n == 2:
-        return -(exp(1j*x) - 1. -1j*x)/(x**2)
+        return -(exp(1j*x) - 1. - 1j*x)/(x**2)
     else:
         print "n must be 1 or 2"
+
 
 def approxGaussian(x, h):
     """
     evaluate approximation of Gaussian basis function
     with sum of complex rational functions
     """
+
     x /= h
 
     sum = 0
 
     for l in range(0, len(a)):
-	j = l-L
+        j = l-L
 
-	# WORKS with max error 7.15344e-13
-	sum += (a[l]/(1j*x + mu + 1j*j)).real
+        # WORKS with max error 7.15344e-13
+        sum += (a[l]/(1j*x + mu + 1j*j)).real
 
     return sum
 
@@ -82,6 +86,7 @@ def test_rexi_exponential_approx():
         exact = exp(1j*x)
         approx = approx_e_ix(x, h, M, False)
         assert abs(exact - approx) < 2.e-11
+
 
 @pytest.mark.parametrize("n", [1, 2])
 def test_rexi_phi_approx(n):

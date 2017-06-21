@@ -4,9 +4,8 @@ from frexi_sphere.sw_setup import SetupShallowWater
 import frexi_sphere.diagnostics
 import frexi_sphere.timestepping
 import numpy
-from os import path
-import json
 parameters["pyop2_options"]["lazy_evaluation"] = False
+
 # set up mesh and initial conditions for Williamson 2 testcase
 R = 6371220.
 ref_level = 3
@@ -25,8 +24,8 @@ setup.ics()
 # get spaces and initialise
 V1 = setup.spaces['u']
 V2 = setup.spaces['h']
-u0 = Function(V1,name="u").assign(setup.u0)
-h0 = Function(V2,name="h").assign(setup.h0)
+u0 = Function(V1, name="u").assign(setup.u0)
+h0 = Function(V2, name="h").assign(setup.h0)
 
 # setup parameters for REXI
 h = 0.2
@@ -39,8 +38,9 @@ dx0 = numpy.pi*4*R**2/ncells
 timestepper = SSPRK2V(setup, dt, direct, h, M, False, IPcoeff=10/dx0)
 
 # output file and output fields
-dirname = 'SSPRK2V_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)
+dirname = 'results/SSPRK2V_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)
 fields = [u0, h0]
 
-timestepping = frexi_sphere.timestepping.Timestepping(dirname, fields, setup.params, timestepper)
+timestepping = frexi_sphere.timestepping.Timestepping(
+    dirname, fields, setup.params, timestepper)
 timestepping.run(dt, tmax, steady_state=True)

@@ -1,5 +1,7 @@
-from firedrake import assemble, inner, dx, sqrt, op2, dot, FunctionSpace, Function, TestFunction
+from firedrake import assemble, inner, dx, sqrt, op2, dot, \
+    FunctionSpace, Function, TestFunction
 import numpy as np
+
 
 class Diagnostics(object):
 
