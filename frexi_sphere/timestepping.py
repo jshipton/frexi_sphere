@@ -13,8 +13,7 @@ class Timestepping(object):
         self.field_dict = {field.name(): field for field in fields}
         self.params = params
         self.timestepper = timestepper
-        self.diagnostics_file = path.join(
-            "results/"+dirname, "diagnostics.json")
+        self.diagnostics_file = path.join(dirname, "diagnostics.json")
         self.diagnostics = frexi_sphere.diagnostics.Diagnostics()
 
     def setup_diagnostics(self):

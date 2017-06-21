@@ -155,6 +155,10 @@ class Rexi(object):
         self.ar = ar
         self.bi = bi
         self.br = br
+        ai = self.ai
+        ar = self.ar
+        bi = self.bi
+        br = self.br
 
         self.w_sum = Function(W)
         self.w = Function(W)
@@ -201,7 +205,7 @@ class Rexi(object):
                                                    solver_parameters=ip_params)
 
         solver = 'new'
-        if solver == 'new':
+        if solver == 'new' and not(direct_solve):
 
             # (1            sgn(ai))*(ar + L    -ai   )
             # (-sgn(ai)           1) (ai        ar + L)
@@ -245,7 +249,8 @@ class Rexi(object):
             aP += (ac*phi*h1i + inner(grad(phi), sigma*grad(h1i)))*dx
             aP += IPcoeff*sigma*jump(phi)*jump(h1i)*dS
 
-            myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
+            myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
+                                              constant_jacobian=False)
 
             # two_block_parameters = {
             #     'ksp_type': 'gmres',
@@ -283,8 +288,7 @@ class Rexi(object):
                 'fieldsplit_3_pc_type': 'ilu'}
 
             self.rexi_solver = LinearVariationalSolver(
-                myprob, solver_parameters=four_block_parameters,
-                constant_jacobian=False)
+                myprob, solver_parameters=four_block_parameters)
 
         else:
             a = (
@@ -305,12 +309,12 @@ class Rexi(object):
                 + bi*phi*self.h0*dx
             )
 
-            myprob = LinearVariationalProblem(a, L, self.w)
+            myprob = LinearVariationalProblem(a, L, self.w,
+                                              constant_jacobian=False)
 
             if(direct_solve):
                 self.rexi_solver = LinearVariationalSolver(
-                    myprob, solver_parameters=solver_parameters,
-                    constant_jacobian=False)
+                    myprob, solver_parameters=solver_parameters)
             else:
                 # Pack in context variables for the preconditioner
                 appctx = {'W': W, 'V1': V1, 'V2': V2, 'dt': dt,

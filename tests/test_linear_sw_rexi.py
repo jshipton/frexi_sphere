@@ -6,7 +6,7 @@ from frexi_sphere.sw_setup import SetupShallowWater
 import pytest
 
 
-def run(dirname, prob, reduce_to_half):
+def run(dirname, prob, reduce_to_half, direct):
     family = "BDM"
     degree = 0
     n = 64
@@ -31,7 +31,7 @@ def run(dirname, prob, reduce_to_half):
     im_h = im.h_end
     im_u = im.u_end
 
-    r = LinearExponentialIntegrator(setup, t, True, h, M, reduce_to_half=reduce_to_half)
+    r = LinearExponentialIntegrator(setup, t, direct, h, M, reduce_to_half=reduce_to_half)
     stepper = Timestepping(dirname, [u0, h0], setup.params, r)
     stepper.run(t, t)
     h_err = sqrt(assemble((rexi_h - im_h)*(rexi_h - im_h)*dx))/sqrt(assemble(im_h*im_h*dx))
@@ -41,8 +41,9 @@ def run(dirname, prob, reduce_to_half):
 
 @pytest.mark.parametrize("problem", ["wave_scenario", "gaussian_scenario"])
 @pytest.mark.parametrize("reduce_to_half", [True, False])
-def test_linear_sw_rexi(tmpdir, problem, reduce_to_half):
+@pytest.mark.parametrize("direct", [True, False])
+def test_linear_sw_rexi(tmpdir, problem, reduce_to_half, direct):
     dirname = str(tmpdir)
-    h_err, u_err = run(dirname, problem, reduce_to_half)
+    h_err, u_err = run(dirname, problem, reduce_to_half, direct)
     assert h_err < 0.01
     assert u_err < 0.006
