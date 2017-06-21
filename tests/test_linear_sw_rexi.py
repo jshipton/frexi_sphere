@@ -33,7 +33,7 @@ def run(dirname, prob, reduce_to_half, direct):
 
     r = LinearExponentialIntegrator(setup, t, direct, h, M, reduce_to_half=reduce_to_half)
     stepper = Timestepping(dirname, [u0, h0], setup.params, r)
-    stepper.run(t, t)
+    rexi_h, rexi_u = stepper.run(t, t, return_end=True)
     h_err = sqrt(assemble((rexi_h - im_h)*(rexi_h - im_h)*dx))/sqrt(assemble(im_h*im_h*dx))
     u_err = sqrt(assemble(inner(rexi_u-im_u, rexi_u-im_u)*dx))/sqrt(assemble(inner(im_u, im_u)*dx))
     return h_err, u_err

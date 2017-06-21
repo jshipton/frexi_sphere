@@ -31,7 +31,7 @@ class Timestepping(object):
         self.diagnostics_data['max_courant'] = []
         self.diagnostics_data['energy'] = []
 
-    def run(self, dt, tmax, steady_state=False):
+    def run(self, dt, tmax, steady_state=False, return_end=False):
 
         # get initial fields
         u0 = self.field_dict['u']
@@ -98,6 +98,9 @@ class Timestepping(object):
 
             # print some diagnostics to check things are going well
             print t, energy, max_courant
+
+        if return_end:
+            return h_out, u_out
 
         # dump diagnostics dictionary
         with open(self.diagnostics_file, "w") as f:
