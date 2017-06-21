@@ -141,24 +141,19 @@ class Rexi(object):
                                  "pc_type": "python",
                                  "pc_python_type": "rexi.REXI_PC"}
 
-        ai = Constant(alpha[0].imag)
-        bi = Constant(beta_re[0].imag)
-        ar = Constant(alpha[0].real)
-        br = Constant(beta_re[0].real)
+        self.ai = Constant(alpha[0].imag)
+        self.bi = Constant(beta_re[0].imag)
+        self.ar = Constant(alpha[0].real)
+        self.br = Constant(beta_re[0].real)
+        ai = self.ai
+        ar = self.ar
+        bi = self.bi
+        br = self.br
 
         aimax = numpy.array(alpha).imag.max()
 
         self.alpha = alpha
         self.beta_re = beta_re
-
-        self.ai = ai
-        self.ar = ar
-        self.bi = bi
-        self.br = br
-        ai = self.ai
-        ar = self.ar
-        bi = self.bi
-        br = self.br
 
         self.w_sum = Function(W)
         self.w = Function(W)
