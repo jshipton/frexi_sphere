@@ -11,12 +11,13 @@ class LinearExponentialIntegrator(object):
     """
 
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, IPcoeff=0.):
+        self.dt = dt
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
         self.coefficients = alpha, beta_re
         self.rexi = Rexi(setup, direct_solve, self.coefficients, IPcoeff)
 
-    def apply(self, dt, u_in, h_in, u_out, h_out):
-        w = self.rexi.solve(u_in, h_in, dt)
+    def apply(self, u_in, h_in, u_out, h_out):
+        w = self.rexi.solve(u_in, h_in, self.dt)
         ur, hr, _, _ = w.split()
         u_out.assign(ur)
         h_out.assign(hr)
@@ -31,7 +32,6 @@ class NonlinearExponentialIntegrator(LinearExponentialIntegrator):
 
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, nonlinear=True,IPcoeff=0.):
         super(NonlinearExponentialIntegrator, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half, IPcoeff=0.)
-        self.dt = dt
         H = Constant(setup.params.H)
         V1 = setup.spaces['u']
         V2 = setup.spaces['h']

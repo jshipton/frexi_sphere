@@ -15,6 +15,7 @@ def run(dirname, prob, reduce_to_half):
 
     mesh = PeriodicSquareMesh(n, n, 1.)
     setup = SetupShallowWater(mesh, family, degree, prob)
+    setup.ics()
     V1 = setup.spaces['u']
     V2 = setup.spaces['h']
     u0 = Function(V1,name="u").assign(setup.u0)
@@ -24,7 +25,7 @@ def run(dirname, prob, reduce_to_half):
 
     dt = 0.01
 
-    im = ImplicitMidpointLinearSWSolver(mesh, family, degree, prob, dt, dirname=dirname)
+    im = ImplicitMidpointLinearSWSolver(setup, dt, dirname=dirname)
     im.run(t)
     im_h = im.h_end
     im_u = im.u_end
