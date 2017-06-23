@@ -89,7 +89,7 @@ equations \ref{weak u}-\ref{weak h} gives
   \begin{split}
     -\tau H \big(\langle\phi^r, \nabla\cdot\MM{u}_n^r\rangle + \langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle\big) \\
     +\alpha_n^r\big(\langle\phi^r, h_n^r\rangle + \langle\phi^i, h_n^i\rangle\big) \\
-    -\alpha_n^i\big(\langle\phi^r, h_n^i,\rangle - \langle\phi^i, h_n^r\rangle\big) &= \beta_n^r\langle\phi^r, h_n^r\rangle + \beta_n^i\langle\phi^i, h_n^i\rangle
+    -\alpha_n^i\big(\langle\phi^r, h_n^i,\rangle - \langle\phi^i, h_n^r\rangle\big) &= \beta_n^r\langle\phi^r, h_0^r\rangle + \beta_n^i\langle\phi^i, h_0^i\rangle
   \end{split}
 \end{align}
 
@@ -107,8 +107,8 @@ Now the weak form is
 \begin{align}
   -\tau f\langle\MM{w}^r, {\MM{u}_n^r}^\perp\rangle + \tau g\langle\nabla\cdot\MM{w}^r, h_n^r\rangle + \alpha_n^r\langle\MM{w}^r, \MM{u}_n^r\rangle - \alpha_n^i\langle\MM{w}^r, \MM{u}_n^i\rangle &= \beta_n^r\langle\MM{w}^r, \MM{u}_0\rangle, \\
   -\tau H\langle\phi^r, \nabla\cdot\MM{u}_n^r\rangle + \alpha_n^r\langle\phi^r, h^r\rangle - \alpha_n^i\langle\phi^r, h_n^i\rangle & = \beta_n^r \langle\phi^r, h_0\rangle, \\
-  -\tau f\langle\MM{w}^i, {\MM{u}_n^i}^\perp\rangle + \tau g\langle\nabla\cdot\MM{w}^i, h_n^i\rangle + \alpha_n^r\langle\MM{w}^i, \MM{u}_n^i\rangle + \alpha_n^i\langle\MM{w}^i, \MM{u}_n^r\rangle &= \beta_n^r\langle\MM{w}^i, \MM{u}_0\rangle, \\
-  -\tau H\langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle + \alpha_n^r\langle\phi^i, h^i\rangle + \alpha_n^i\langle\phi^i, h_n^r\rangle & = \beta_n^r \langle\phi^i, h_0\rangle,
+  -\tau f\langle\MM{w}^i, {\MM{u}_n^i}^\perp\rangle + \tau g\langle\nabla\cdot\MM{w}^i, h_n^i\rangle + \alpha_n^r\langle\MM{w}^i, \MM{u}_n^i\rangle + \alpha_n^i\langle\MM{w}^i, \MM{u}_n^r\rangle &= \beta_n^i\langle\MM{w}^i, \MM{u}_0\rangle, \\
+  -\tau H\langle\phi^i, \nabla\cdot\MM{u}_n^i\rangle + \alpha_n^r\langle\phi^i, h^i\rangle + \alpha_n^i\langle\phi^i, h_n^r\rangle & = \beta_n^i \langle\phi^i, h_0\rangle,
 \end{align}
 
 \noindent as above.
