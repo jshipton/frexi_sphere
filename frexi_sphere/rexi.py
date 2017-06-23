@@ -191,7 +191,7 @@ class Rexi(object):
         self.dt.assign(dt)
 
         self.w_sum.assign(0.)
-        for i in len(self.alpha):
+        for i in range(len(self.alpha)):
             self.ar.assign(self.alpha[i].real)
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
