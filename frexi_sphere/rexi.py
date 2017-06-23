@@ -98,10 +98,10 @@ class REXI_PC(PCBase):
 
 class Rexi(object):
 
-    def __init__(self, setup, direct_solve, rexi_coefficients):
+    def __init__(self, setup, direct_solve, rexi_coefficients=None):
 
-        alpha, beta_re = rexi_coefficients
-
+        if not direct_solve:
+            assert(rexi_coefficients is not None)
         V1 = setup.spaces['u']
         V2 = setup.spaces['h']
         self.u0 = Function(V1, name="u")
@@ -123,8 +123,6 @@ class Rexi(object):
         u1r, h1r, u1i, h1i = TrialFunctions(W)
         wr, phr, wi, phi = TestFunctions(W)
 
-        self.rexi_solver = []
-        
         if direct_solve:
             solver_parameters = {'ksp_type':'preonly',
                                  'mat_type': 'aij',
@@ -135,69 +133,105 @@ class Rexi(object):
                                  "ksp_converged_reason": True,
                                  "mat_type":"matfree",
                                  "pc_type": "python",
-                                 "pc_python_type": "rexi.REXI_PC"}
-
-        ai = Constant(alpha[0].imag)
-        bi = Constant(beta_re[0].imag)
-        ar = Constant(alpha[0].real)
-        br = Constant(beta_re[0].real)
-
-        aimax = numpy.array(alpha).imag.max()
-
-        self.alpha = alpha
-        self.beta_re = beta_re
-
-        self.ai = ai
-        self.ar = ar
-        self.bi = bi
-        self.br = br
-        
-        a = (
-            inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r 
-            - ai*inner(wr,u1i)
-            + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
-            + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i 
-            + ai*inner(wi,u1r)
-            + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
-        )*dx
-            
-        L = (
-            br*inner(wr,self.u0)*dx
-            + br*phr*self.h0*dx 
-            + bi*inner(wi,self.u0)*dx
-            + bi*phi*self.h0*dx 
-        )
+                                 "pc_python_type": "frexi_sphere.rexi.REXI_PC"}
 
         self.w_sum = Function(W)
         self.w = Function(W)
-        myprob = LinearVariationalProblem(a, L, self.w)
 
-        if(direct_solve):
-            self.rexi_solver = LinearVariationalSolver(
-                myprob, solver_parameters=solver_parameters,
-                constant_jacobian=False)
+        if rexi_coefficients is not None:
+            alpha, beta_re = rexi_coefficients
+            self.rexi_solver = []
+            for i in range(len(alpha)):
+                ai = Constant(alpha[i].imag)
+                bi = Constant(beta_re[i].imag)
+                ar = Constant(alpha[i].real)
+                br = Constant(beta_re[i].real)
+                a = (
+                    inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r
+                    - ai*inner(wr,u1i)
+                    + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
+                    + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i
+                    + ai*inner(wi,u1r)
+                    + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
+                )*dx
+            
+                L = (
+                    br*inner(wr,self.u0)*dx
+                    + br*phr*self.h0*dx
+                    + bi*inner(wi,self.u0)*dx
+                    + bi*phi*self.h0*dx
+                )        
+
+                myprob = LinearVariationalProblem(a, L, self.w)
+
+                if direct_solve:
+                    self.rexi_solver.append(LinearVariationalSolver(
+                        myprob, solver_parameters=solver_parameters))
+                else:
+                    #Pack in context variables for the preconditioner
+                    aimax = numpy.array(alpha).imag.max()
+                    appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
+                              'H':H, 'g':g, 'f':f, 'ar':ar,
+                              'ai':ai, 'aimax':aimax, 'perp':perp}
+                    self.rexi_solver.append(LinearVariationalSolver(
+                        myprob, solver_parameters=solver_parameters,
+                        appctx=appctx))
+
         else:
-            #Pack in context variables for the preconditioner
-            appctx = {'W':W,'V1':V1,'V2':V2,'dt':dt,
-                      'H':H, 'g':g, 'f':f, 'ar':ar,
-                      'ai':ai, 'aimax':aimax, 'perp':perp}
-            self.rexi_solver = LinearVariationalSolver(
-                myprob, solver_parameters=solver_parameters,
-                appctx=appctx)
+            self.ar = Constant(1.0)
+            self.ai = Constant(1.0)
+            self.br = Constant(1.0)
+            self.bi = Constant(1.0)
+            a = (
+                inner(wr,u1r)*self.ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r
+                - self.ai*inner(wr,u1i)
+                + phr*(self.ar*h1r - dt*H*div(u1r) - self.ai*h1i)
+                + inner(wi,u1i)*self.ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i
+                + self.ai*inner(wi,u1r)
+                + phi*(self.ar*h1i - dt*H*div(u1i) + self.ai*h1r)
+            )*dx
+            
+            L = (
+                self.br*inner(wr,self.u0)*dx
+                + self.br*phr*self.h0*dx
+                + self.bi*inner(wi,self.u0)*dx
+                + self.bi*phi*self.h0*dx
+            )        
 
-    def solve(self, u0, h0, dt):
+            myprob = LinearVariationalProblem(a, L, self.w, constant_jacobian=False)
+
+            if direct:
+                self.rexi_solver = LinearVariationalSolver(
+                    myprob, solver_parameters=solver_parameters)
+            else:
+                self.rexi_solver = LinearVariationalSolver(
+                    myprob, solver_parameters=solver_parameters,
+                    appctx=appctx)
+
+
+    def solve(self, u0, h0, dt, rexi_coefficients=None):
         self.u0.assign(u0)
         self.h0.assign(h0)
         self.dt.assign(dt)
 
         self.w_sum.assign(0.)
-        for i in range(len(self.alpha)):
-            self.ar.assign(self.alpha[i].real)
-            self.ai.assign(self.alpha[i].imag)
-            self.br.assign(self.beta_re[i].real)
-            self.bi.assign(self.beta_re[i].imag)
-            self.rexi_solver.solve()
-            self.w_sum += self.w
+
+        if rexi_coefficients is not None:
+            alpha, beta = rexi_coefficients
+            N = len(alpha)
+            for i in range(N):
+                self.ai.assign(alpha[i].imag)
+                self.ar.assign(alpha[i].real)
+                self.bi.assign(beta[i].imag)
+                self.br.assign(beta[i].real)
+                self.rexi_solver.solve()
+
+                self.w_sum += self.w
+        else:
+            for i in range(len(self.rexi_solver)):
+                self.rexi_solver[i].solve()
+
+                self.w_sum += self.w
 
         return self.w_sum
 
