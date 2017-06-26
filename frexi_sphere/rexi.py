@@ -174,8 +174,8 @@ class Rexi(object):
             sigma = dt**2*H*g/ac/(1 + (dt*f/ac)**2)
 
             eta = Constant(10.0)
-            Vol = CellVolume(W.mesh)
-            FArea = FacetArea(W.mesh)
+            Vol = CellVolume(W.mesh())
+            FArea = FacetArea(W.mesh())
             h = Min(Vol('+'), Vol('-'))/FArea
             IPcoeff = eta/h
             
