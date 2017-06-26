@@ -176,33 +176,6 @@ class Rexi(object):
 
             IPcoeff = Constant(IPcoeff)
 
-            "some test code here!"
-            Ws = MixedFunctionSpace((V1, V2))
-            us, hs = TrialFunctions(Ws)
-            ws, phs = TestFunctions(Ws)
-            a = (ar + abs(ai))*inner_m(us, hs, ws, phs)
-            a += L_op(us, hs, ws, phs)
-            aP = ac*inner_m(us, hs, ws, phs)
-            aP += -dt*f*inner(ws, perp(us))*dx
-            aP += (ac*phs*hs + inner(grad(phs), sigma*grad(hs)))*dx
-            aP += IPcoeff*sigma*jump(phs)*jump(hs)*dS
-            L = (
-                (br + sign(ai)*bi)*(inner(ws, self.u0)*dx
-                                    + phs*self.h0*dx))
-            ws0 = Function(Ws)
-            ip_params = {'ksp_type': 'gmres',
-                         'pc_type': 'fieldsplit',
-                         'ksp_monitor': True,
-                         'pc_fieldsplit_0_fields': '1',
-                         'pc_fieldsplit_1_fields': '0',
-                         'fieldsplit_0_ksp_type': 'preonly',
-                         'fieldsplit_1_ksp_type': 'preonly',
-                         'fieldsplit_0_pc_type': 'lu',
-                         'fieldsplit_1_pc_type': 'lu'}
-            test_prob = LinearVariationalProblem(a, L, ws0, aP=aP)
-            self.test_solver = LinearVariationalSolver(test_prob,
-                                                       solver_parameters=ip_params)
-
             # (1            sgn(ai))*(ar + L    -ai   )
             # (-sgn(ai)           1) (ai        ar + L)
 
