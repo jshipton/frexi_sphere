@@ -305,7 +305,6 @@ class Rexi(object):
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
             self.bi.assign(self.beta_re[i].imag)
-            # self.test_solver.solve()
             self.rexi_solver.solve()
             self.w_sum += self.w
 
