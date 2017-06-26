@@ -102,7 +102,7 @@ class REXI_PC(PCBase):
 
 class Rexi(object):
 
-    def __init__(self, setup, direct_solve, rexi_coefficients, IPcoeff=None):
+    def __init__(self, setup, direct_solve, rexi_coefficients):
 
         alpha, beta_re = rexi_coefficients
 
@@ -158,7 +158,6 @@ class Rexi(object):
 
         solver = 'new'
         if solver == 'new' and not(direct_solve):
-            assert(IPcoeff is not None)
 
             aimax = numpy.array(alpha).imag.max()
 
