@@ -173,8 +173,12 @@ class Rexi(object):
             ac = ar + abs(aimax)
             sigma = dt**2*H*g/ac/(1 + (dt*f/ac)**2)
 
-            IPcoeff = Constant(IPcoeff)
-
+            eta = Constant(10.0)
+            Vol = CellVolume(state.mesh)
+            FArea = FacetArea(state.mesh)
+            h = Min(Vol('+'), Vol('-'))/FArea
+            IPcoeff = eta/h
+            
             # (1            sgn(ai))*(ar + L    -ai   )
             # (-sgn(ai)           1) (ai        ar + L)
 
