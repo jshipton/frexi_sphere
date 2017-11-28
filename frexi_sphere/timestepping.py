@@ -69,7 +69,7 @@ class Timestepping(object):
         self.diagnostics_data['time'].append(t)
 
         # print some diagnostics to check things are going well    
-        print t, energy, max_courant
+        print(t, energy, max_courant)
 
         # timestepping loop
         while t < tmax - 0.5*dt:
@@ -94,7 +94,7 @@ class Timestepping(object):
             self.diagnostics_data['time'].append(t)
 
             # print some diagnostics to check things are going well    
-            print t, energy, max_courant
+            print(t, energy, max_courant)
 
         # dump diagnostics dictionary
         with open(self.diagnostics_file, "w") as f:

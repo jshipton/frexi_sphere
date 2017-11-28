@@ -86,7 +86,7 @@ def b_coefficients(h, M, n=0):
             b.append(4*pi**2*(re + 1j*im))
         return b        
     else:
-        print "n must be 0, 1 or 2"
+        print("n must be 0, 1 or 2")
 
 def RexiCoefficients(h, M, n=0, reduce_to_half=False):
     params = REXIParameters()

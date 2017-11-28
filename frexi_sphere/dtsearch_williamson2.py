@@ -20,9 +20,9 @@ dt_old = 1000.
 dt = 2000.
 
 for degree in degrees:
-    print "degree is: ", degree
+    print ("degree is: ", degree)
     while abs(dt - dt_old) > 100.:
-        print "dt is: ", dt
+        print ("dt is: ", dt)
         setup = SetupShallowWater(mesh, family="BDM", degree=degree, problem_name="w2")
 
         # get spaces and initialise

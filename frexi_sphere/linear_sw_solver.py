@@ -56,17 +56,17 @@ class ImplicitMidpointLinearSWSolver(object):
         u1.rename('velocity')
         h1.rename('height')
         outfile.write(u1, h1)
-        print t, tmax-0.5*dt
+        print(t, tmax-0.5*dt)
         while t < tmax - 0.5*dt:
 
-            print "t = ", t, "energy = ", assemble(0.5*(inner(u1, u1) + g*H*h1*h1)*dx)
+            print ("t = ", t, "energy = ", assemble(0.5*(inner(u1, u1) + g*H*h1*h1)*dx))
             solver.solve()
             u1, h1 = uh1.split()
             outfile.write(u1, h1)
 
             t += dt
 
-        print "t = ", t, "energy = ", assemble(0.5*(inner(u1, u1) + g*H*h1*h1)*dx)
+        print ("t = ", t, "energy = ", assemble(0.5*(inner(u1, u1) + g*H*h1*h1)*dx))
         outfile.write(u1, h1)
         self.u_end = u1
         self.h_end = h1
