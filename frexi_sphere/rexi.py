@@ -37,7 +37,6 @@ class Rexi(object):
         else:
             
             hybridisation_parameters = {'ksp_type': 'preonly',
-                                        'ksp_monitor': True,
                                         'mat_type': 'matfree',
                                         'pc_type': 'python',
                                         'pc_python_type': 'firedrake.HybridizationPC',
@@ -60,26 +59,26 @@ class Rexi(object):
                                  "fieldsplit_1_ksp_type": "preonly",
                                  "fieldsplit_0_pc_type": "lu",
                                  "fieldsplit_1_pc_type": "lu"}
-
-
             
 
         self.w_sum = Function(W)
         self.w = Function(W)
+
+        def L_op(u, h, v, q):
+            lform = -dt*f*inner(v,perp(u))*dx
+            lform += dt*g*div(v)*h*dx
+            lform += -dt*H*q*div(u)*dx
+            return lform
+
+        def inner_m(u, h, v, q):
+            return inner(u,v)*dx + h*q*dx
+
+
         for i in range(len(alpha)):
             ai = Constant(alpha[i].imag)
             bi = Constant(beta_re[i].imag)
             ar = Constant(alpha[i].real)
             br = Constant(beta_re[i].real)
-
-            def L_op(u, h, v, q):
-                lform = -dt*f*inner(v,perp(u))*dx
-                lform += dt*g*div(v)*h*dx
-                lform += -dt*H*q*div(u)*dx
-                return lform
-
-            def inner_m(u, h, v, q):
-                return inner(u,v)*dx + h*q*dx
 
             # (1           -sgn(ai))*(ar + L    -ai   )
             # (sgn(ai)            1) (ai        ar + L)
@@ -107,7 +106,14 @@ class Rexi(object):
                                       + phi*self.h0*dx)
             )
 
-            myprob = LinearVariationalProblem(a, L, self.w)
+            # (1,1) block
+            aP = (ar - abs(ai))*inner_m(u1r, h1r, wr, phr)
+            aP += L_op(u1r, h1r, wr, phr)
+            # (2,2) block
+            aP += (ar - abs(ai))*inner_m(u1i, h1i, wi, phi)
+            aP += L_op(u1i, h1i, wi, phi)
+            
+            myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
 
             self.rexi_solver.append(LinearVariationalSolver(
                 myprob, solver_parameters=solver_parameters))
