@@ -38,7 +38,7 @@ def exact_phi(n, x):
     elif n == 2:
         return -(exp(1j*x) - 1. -1j*x)/(x**2)
     else:
-        print "n must be 1 or 2"
+        print("n must be 1 or 2")
 
 def approxGaussian(x, h):
     """
@@ -90,5 +90,5 @@ def test_rexi_phi_approx(n):
     for x in range(-191, 192, 10):
         exact = exact_phi(n, x)
         approx = approx_phi(x, h, M, n)
-        print x, exact, approx, abs(exact - approx)
+        print(x, exact, approx, abs(exact - approx))
         assert abs(exact - approx) < 2.e-13
