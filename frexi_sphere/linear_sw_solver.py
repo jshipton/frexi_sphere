@@ -1,6 +1,6 @@
 from firedrake import *
 from os import path
-from sw_setup import SetupShallowWater
+from frexi_sphere.sw_setup import SetupShallowWater
 
 class ImplicitMidpointLinearSWSolver(object):
 

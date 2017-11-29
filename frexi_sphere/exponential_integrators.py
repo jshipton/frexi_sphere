@@ -1,7 +1,7 @@
 from firedrake import *
 from abc import ABCMeta, abstractmethod
-from rexi_coefficients import RexiCoefficients
-from rexi import Rexi
+from frexi_sphere.rexi_coefficients import RexiCoefficients
+from frexi_sphere.rexi import Rexi
 import numpy as np
 
 class LinearExponentialIntegrator(object):

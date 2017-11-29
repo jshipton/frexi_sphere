@@ -26,8 +26,8 @@ ys = np.arange(-ymax,ymax,ymax/res)
 
 evalues = np.zeros((len(xs), len(ys)), dtype="complex")
 for i in range(0, len(xs)):
-	for j in range(0, len(ys)):
-		evalues[i,j] = 1j*ys[i]+xs[j]
+    for j in range(0, len(ys)):
+        evalues[i,j] = 1j*ys[i]+xs[j]
 
 
 stability = np.zeros((len(xs), len(ys)))
@@ -35,96 +35,93 @@ error_re_including = np.zeros((len(xs), len(ys)))
 error_re_excluding = np.zeros((len(xs), len(ys)))
 
 for i in range(0, len(xs)):
-	for j in range(0, len(ys)):
-            evalue = evalues[i,j]
-	    sumval = 0.
+    for j in range(0, len(ys)):
+        evalue = evalues[i,j]
+        sumval = 0.
 
-	    # compute REXI SUM
-	    for n in range(len(alpha)):
-		denom = (evalue + alpha[n]);
-		sumval += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
-		#sumval += (beta_re[n] / denom).real
+        # compute REXI SUM
+        for n in range(len(alpha)):
+            denom = (evalue + alpha[n]);
+            sumval += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
+            #sumval += (beta_re[n] / denom).real
 
-	    # Check for stability and add if stable
-	    if abs(sumval) <= 1.0:
-            	stability[i,j] = 1
+        # Check for stability and add if stable
+        if abs(sumval) <= 1.0:
+            stability[i,j] = 1
 
-	    # analytical solution
-	    val = np.exp(evalue)
-	    error_re_including[i,j] = abs((val-sumval).real)
+        # analytical solution
+        val = np.exp(evalue)
+        error_re_including[i,j] = abs((val-sumval).real)
 
-	    val2 = np.exp(evalue.imag*1j)
-	    error_re_excluding[i,j] = abs((val2-sumval).real)
-
-
+        val2 = np.exp(evalue.imag*1j)
+        error_re_excluding[i,j] = abs((val2-sumval).real)
 
 
 def heatmap_plot(
-		title,
-		xlabel,
-		col_labels,
-		ylabel,
-		row_labels,
-		data,
-		outfile = '',
-		legend_min = None,
-		legend_max = None
-		):
-        import matplotlib.pyplot as plt
-	from matplotlib import cm
-	from matplotlib.colors import LogNorm
+                title,
+                xlabel,
+                col_labels,
+                ylabel,
+                row_labels,
+                data,
+                outfile = '',
+                legend_min = None,
+                legend_max = None
+):
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    from matplotlib.colors import LogNorm
 
-	col_labels = [str(i) for i in col_labels]
-	mod = len(col_labels)/10
-	for i in range(0, len(col_labels)):
-		if i % mod > 0:
-			col_labels[i] = ''
-			continue
-		if abs(float(col_labels[i])) < 1e-10:
-			col_labels[i] = 0
-			
-	row_labels = [str(i) for i in row_labels]
-	mod = len(row_labels)/10
-	for i in range(0, len(row_labels)):
-		if i % mod > 0:
-			row_labels[i] = ''
-			continue
-		if abs(float(row_labels[i])) < 1e-10:
-			row_labels[i] = 0
+    col_labels = [str(i) for i in col_labels]
+    mod = len(col_labels)/10
+    for i in range(0, len(col_labels)):
+        if i % mod > 0:
+            col_labels[i] = ''
+            continue
+        if abs(float(col_labels[i])) < 1e-10:
+            col_labels[i] = 0
+                        
+    row_labels = [str(i) for i in row_labels]
+    mod = len(row_labels)/10
+    for i in range(0, len(row_labels)):
+        if i % mod > 0:
+            row_labels[i] = ''
+            continue
+        if abs(float(row_labels[i])) < 1e-10:
+            row_labels[i] = 0
 
-	fig, ax = plt.subplots()
+    fig, ax = plt.subplots()
 
-	
-	legend_norm = LogNorm(legend_min, legend_max)
-	heatmap = ax.pcolor(data, cmap=cm.rainbow, norm=legend_norm)
+        
+    legend_norm = LogNorm(legend_min, legend_max)
+    heatmap = ax.pcolor(data, cmap=cm.rainbow, norm=legend_norm)
 
-	plt.title(title, y=1.08, fontweight='bold')
+    plt.title(title, y=1.08, fontweight='bold')
 
-	#legend
-	cbar = plt.colorbar(heatmap)
-#	cbar.set_label('in height', rotation=270)
+    #legend
+    cbar = plt.colorbar(heatmap)
+    #        cbar.set_label('in height', rotation=270)
 
-	fig.subplots_adjust(left=0.25, right=0.9, top=0.9, bottom=0.3)
+    fig.subplots_adjust(left=0.25, right=0.9, top=0.9, bottom=0.3)
 
-	# put the major ticks at the middle of each cell
-	ax.set_xticks(np.arange(len(col_labels))+0.5, minor=False)
-	ax.set_xticklabels(col_labels, minor=False, rotation=45)
-	ax.set_xlim(0, len(col_labels))
-	ax.set_xlabel(xlabel)
+    # put the major ticks at the middle of each cell
+    ax.set_xticks(np.arange(len(col_labels))+0.5, minor=False)
+    ax.set_xticklabels(col_labels, minor=False, rotation=45)
+    ax.set_xlim(0, len(col_labels))
+    ax.set_xlabel(xlabel)
 
-	ax.set_yticks(np.arange(len(row_labels))+0.5, minor=False)
-	ax.set_yticklabels(row_labels, minor=False)
-	ax.set_ylim(0, len(row_labels))
-	ax.set_ylabel(ylabel)
+    ax.set_yticks(np.arange(len(row_labels))+0.5, minor=False)
+    ax.set_yticklabels(row_labels, minor=False)
+    ax.set_ylim(0, len(row_labels))
+    ax.set_ylabel(ylabel)
+    
+    # want a more natural, table-like display
+    ax.invert_yaxis()
 
-	# want a more natural, table-like display
-	ax.invert_yaxis()
-
-
-	if outfile != '':
-		plt.savefig(outfile, dpi=300)#, format='pdf')
-	else:
-		plt.show()
+    if outfile != '':
+        plt.savefig(outfile, dpi=300)#, format='pdf')
+    else:
+        plt.show()
 
 
 heatmap_plot("REXI stability", "Re(evalue)", xs, "Im(evalue)", ys, stability, "output_rexi_stability.png", 1e-10, 1)

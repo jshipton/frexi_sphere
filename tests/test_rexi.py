@@ -13,12 +13,12 @@ def approx_e_ix(x, h, M, use_Gaussian_approx):
     sum = 0
     if use_Gaussian_approx:
         for m in range(-M, M+1):
-	    sum += b[m+M] * approxGaussian(x+float(m)*h, h)
+            sum += b[m+M] * approxGaussian(x+float(m)*h, h)
     else:
         alpha, beta_re, beta_im = RexiCoefficients(h, M)
         for n in range(len(alpha)):
-	    denom = (1j*x + alpha[n]);
-	    sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
+            denom = (1j*x + alpha[n]);
+            sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
 
     return sum
 
@@ -28,7 +28,7 @@ def approx_phi(x, h, M, n):
 
     sum = 0
     for m in range(-M, M+1):
-	sum += b[m+M] * exp(-((x+m*h)*(x+m*h))/(4.0*h*h))/sqrt(4.0*pi)
+        sum += b[m+M] * exp(-((x+m*h)*(x+m*h))/(4.0*h*h))/sqrt(4.0*pi)
 
     return sum
 
@@ -50,10 +50,10 @@ def approxGaussian(x, h):
     sum = 0
 
     for l in range(0, len(a)):
-	j = l-L
+        j = l-L
 
-	# WORKS with max error 7.15344e-13
-	sum += (a[l]/(1j*x + mu + 1j*j)).real
+        # WORKS with max error 7.15344e-13
+        sum += (a[l]/(1j*x + mu + 1j*j)).real
 
     return sum
 
