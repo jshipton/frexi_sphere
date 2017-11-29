@@ -48,6 +48,8 @@ class Rexi(object):
                                  "fieldsplit_1_pc_type": "lu"}
 
 
+            
+
         self.w_sum = Function(W)
         self.w = Function(W)
         for i in range(len(alpha)):
