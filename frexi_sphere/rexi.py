@@ -53,13 +53,14 @@ class Rexi(object):
                                  "pc_type": "fieldsplit",
                                  "mat_type": "aij",
                                  "pc_fieldsplit_type": "multiplicative",
+                                 "pc_fieldsplit_off_diag_use_amat": True,
                                  "pc_fieldsplit_0_fields": "0,1",
                                  "pc_fieldsplit_1_fields": "2,3",
                                  "fieldsplit_0_ksp_type": "preonly",
                                  "fieldsplit_1_ksp_type": "preonly",
                                  "fieldsplit_0_pc_type": "lu",
                                  "fieldsplit_1_pc_type": "lu"}
-            
+
 
         self.w_sum = Function(W)
         self.w = Function(W)
