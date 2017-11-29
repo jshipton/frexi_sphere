@@ -55,21 +55,40 @@ class Rexi(object):
             bi = Constant(beta_re[i].imag)
             ar = Constant(alpha[i].real)
             br = Constant(beta_re[i].real)
-            
-            a = (
-                inner(wr,u1r)*ar - dt*f*inner(wr,perp(u1r)) + dt*g*div(wr)*h1r
-                - ai*inner(wr,u1i)
-                + phr*(ar*h1r - dt*H*div(u1r) - ai*h1i)
-                + inner(wi,u1i)*ar - dt*f*inner(wi,perp(u1i)) + dt*g*div(wi)*h1i
-                + ai*inner(wi,u1r)
-                + phi*(ar*h1i - dt*H*div(u1i) + ai*h1r)
-            )*dx
+
+            def L_op(u, h, v, q):
+                lform = -dt*f*inner(v,perp(u))*dx
+                lform += dt*g*div(v)*h*dx
+                lform += -dt*H*q*div(u)*dx
+                return lform
+
+            def inner_m(u, h, v, q):
+                return inner(u,v)*dx + h*q*dx
+
+            # (1            sgn(ai))*(ar + L    -ai   )
+            # (-sgn(ai)           1) (ai        ar + L)
+
+            # (1,1) block
+            a = (ar + abs(ai))*inner_m(u1r, h1r, wr, phr)
+            a += L_op(u1r, h1r, wr, phr)
+            # (1,2) block
+            a += (-ai + sign(ai)*ar)*inner_m(u1i, h1i, wr, phr)
+            a += sign(ai)*L_op(u1i, h1i, wr, phr)
+            # (2,1) block
+            a += (ai - sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
+            a += -sign(ai)*L_op(u1r, h1r, wi, phi)
+            # (2,2) block
+            a += (ar + abs(ai))*inner_m(u1i, h1i, wi, phi)
+            a += L_op(u1i, h1i, wi, phi)
+
+            # (1            sgn(ai))*(br*inner)
+            # (-sgn(ai)           1) (bi*inner)
             
             L = (
-                br*inner(wr,self.u0)*dx
-                + br*phr*self.h0*dx
-                + bi*inner(wi,self.u0)*dx
-                + bi*phi*self.h0*dx
+                (br + sign(ai)*bi)*(inner(wr,self.u0)*dx
+                                   + phr*self.h0*dx)
+                +(-sign(ai)*br + bi)*(inner(wi,self.u0)*dx
+                                      + phi*self.h0*dx)
             )
 
             myprob = LinearVariationalProblem(a, L, self.w)
