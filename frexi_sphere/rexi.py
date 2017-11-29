@@ -5,7 +5,7 @@ class Rexi(object):
     def __init__(self, setup, direct_solve, rexi_coefficients):
 
         alpha, beta_re = rexi_coefficients
-
+        self.alpha = alpha
         V1 = setup.spaces['u']
         V2 = setup.spaces['h']
         self.u0 = Function(V1, name="u")
@@ -35,8 +35,22 @@ class Rexi(object):
                                  'pc_type':'lu',
                                  'pc_factor_mat_solver_package': 'mumps'}
         else:
+            
+            hybridisation_parameters = {'ksp_type': 'preonly',
+                                        'ksp_monitor': True,
+                                        'mat_type': 'matfree',
+                                        'pc_type': 'python',
+                                        'pc_python_type': 'firedrake.HybridizationPC',
+                                        'hybridization': {'ksp_type': 'preonly',
+                                                          'ksp_monitor': True,
+                                                          'pc_type': 'hypre',
+                                                          'hdiv_residual_ksp_type': 'preonly',
+                                                          'hdiv_residual_pc_type': 'sor', 
+                                                          'hdiv_projection_ksp_type': 'preonly',
+                                                          'hdiv_projection_pc_type': 'sor'}}
+            
             solver_parameters = {"ksp_type": "gmres",
-                                 "ksp_monitor": True,
+                                 "ksp_converged_reason": True,
                                  "pc_type": "fieldsplit",
                                  "mat_type": "aij",
                                  "pc_fieldsplit_type": "multiplicative",
@@ -67,29 +81,29 @@ class Rexi(object):
             def inner_m(u, h, v, q):
                 return inner(u,v)*dx + h*q*dx
 
-            # (1            sgn(ai))*(ar + L    -ai   )
-            # (-sgn(ai)           1) (ai        ar + L)
+            # (1           -sgn(ai))*(ar + L    -ai   )
+            # (sgn(ai)            1) (ai        ar + L)
 
             # (1,1) block
-            a = (ar + abs(ai))*inner_m(u1r, h1r, wr, phr)
+            a = (ar - abs(ai))*inner_m(u1r, h1r, wr, phr)
             a += L_op(u1r, h1r, wr, phr)
             # (1,2) block
-            a += (-ai + sign(ai)*ar)*inner_m(u1i, h1i, wr, phr)
-            a += sign(ai)*L_op(u1i, h1i, wr, phr)
+            a += (-ai - sign(ai)*ar)*inner_m(u1i, h1i, wr, phr)
+            a += -sign(ai)*L_op(u1i, h1i, wr, phr)
             # (2,1) block
-            a += (ai - sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
-            a += -sign(ai)*L_op(u1r, h1r, wi, phi)
+            a += (ai + sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
+            a += +sign(ai)*L_op(u1r, h1r, wi, phi)
             # (2,2) block
-            a += (ar + abs(ai))*inner_m(u1i, h1i, wi, phi)
+            a += (ar - abs(ai))*inner_m(u1i, h1i, wi, phi)
             a += L_op(u1i, h1i, wi, phi)
 
-            # (1            sgn(ai))*(br*inner)
-            # (-sgn(ai)           1) (bi*inner)
+            # (1           -sgn(ai))*(br*inner)
+            # (sgn(ai)            1) (bi*inner)
             
             L = (
-                (br + sign(ai)*bi)*(inner(wr,self.u0)*dx
+                (br - sign(ai)*bi)*(inner(wr,self.u0)*dx
                                    + phr*self.h0*dx)
-                +(-sign(ai)*br + bi)*(inner(wi,self.u0)*dx
+                +(+sign(ai)*br + bi)*(inner(wi,self.u0)*dx
                                       + phi*self.h0*dx)
             )
 
@@ -106,6 +120,7 @@ class Rexi(object):
         self.w_sum.assign(0.)
 
         for i in range(len(self.rexi_solver)):
+            print(self.alpha[i])
             self.rexi_solver[i].solve()
 
             self.w_sum += self.w
