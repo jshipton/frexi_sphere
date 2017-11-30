@@ -35,9 +35,8 @@ class Rexi(object):
                                  'pc_type':'lu',
                                  'pc_factor_mat_solver_package': 'mumps'}
         else:
-            
+                        
             hybridisation_parameters = {'ksp_type': 'preonly',
-                                        'mat_type': 'matfree',
                                         'pc_type': 'python',
                                         'pc_python_type': 'firedrake.HybridizationPC',
                                         'hybridization': {'ksp_type': 'preonly',
@@ -47,20 +46,18 @@ class Rexi(object):
                                                           'hdiv_residual_pc_type': 'sor', 
                                                           'hdiv_projection_ksp_type': 'preonly',
                                                           'hdiv_projection_pc_type': 'sor'}}
-            
             solver_parameters = {"ksp_type": "gmres",
+                                 'mat_type': 'matfree',
                                  "ksp_converged_reason": True,
                                  "pc_type": "fieldsplit",
-                                 "mat_type": "aij",
                                  "pc_fieldsplit_type": "multiplicative",
                                  "pc_fieldsplit_off_diag_use_amat": True,
                                  "pc_fieldsplit_0_fields": "0,1",
                                  "pc_fieldsplit_1_fields": "2,3",
-                                 "fieldsplit_0_ksp_type": "preonly",
-                                 "fieldsplit_1_ksp_type": "preonly",
-                                 "fieldsplit_0_pc_type": "lu",
-                                 "fieldsplit_1_pc_type": "lu"}
-
+                                 "fieldsplit_0": hybridisation_parameters,
+                                 "fieldsplit_1": hybridisation_parameters}
+            # For reusing solver with different A, but same aP.
+            # solver_parameters["ksp_reuse_preconditioner"] = True
 
         self.w_sum = Function(W)
         self.w = Function(W)
