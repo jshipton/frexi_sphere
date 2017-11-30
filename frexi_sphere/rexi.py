@@ -57,7 +57,7 @@ class Rexi(object):
                                  "fieldsplit_0": hybridisation_parameters,
                                  "fieldsplit_1": hybridisation_parameters}
             # For reusing solver with different A, but same aP.
-            # solver_parameters["ksp_reuse_preconditioner"] = True
+            solver_parameters["ksp_reuse_preconditioner"] = True
 
         self.w_sum = Function(W)
         self.w = Function(W)
@@ -111,7 +111,8 @@ class Rexi(object):
             aP += (ar - abs(ai))*inner_m(u1i, h1i, wi, phi)
             aP += L_op(u1i, h1i, wi, phi)
             
-            myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
+            myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
+                                              constant_jacobian=False)
 
             self.rexi_solver.append(LinearVariationalSolver(
                 myprob, solver_parameters=solver_parameters))
