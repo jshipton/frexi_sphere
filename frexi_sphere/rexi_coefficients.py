@@ -120,5 +120,5 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
             beta_re[i] *= 2.0
             beta_im[i] *= 2.0
 
-            print("Done.")
+        print("Done.")
     return alpha, beta_re, beta_im
