@@ -85,7 +85,7 @@ class Rexi(object):
             ai0.append(Constant(alpha[alpha_is[l]].real))
             
         # indices to select which solvers to use for each coefficient
-        self.solver_list = [0]*nalpha/2 + [1]*(nalpha-nalpha/2)
+        self.solver_list = [0]*(nalpha//2) + [1]*(nalpha-nalpha//2)
 
         self.ai = Constant(alpha[0].imag)
         self.bi = Constant(beta_re[0].imag)
