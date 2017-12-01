@@ -82,7 +82,7 @@ class Rexi(object):
         ai0 = []
         for l in range(len(alpha_is)):
             ar0.append(Constant(alpha[alpha_is[l]].real))
-            ari.append(Constant(alpha[nalpha_is[l]].real))
+            ai0.append(Constant(alpha[alpha_is[l]].real))
             
         # indices to select which solvers to use for each coefficient
         self.solver_list = [0]*nalpha/2 + [1]*(nalpha-nalpha/2)
