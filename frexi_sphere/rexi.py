@@ -6,6 +6,7 @@ class Rexi(object):
 
         alpha, beta_re = rexi_coefficients
         self.alpha = alpha
+        self.beta_re = beta_re
         V1 = setup.spaces['u']
         V2 = setup.spaces['h']
         self.u0 = Function(V1, name="u")
@@ -74,49 +75,60 @@ class Rexi(object):
         def inner_m(u, h, v, q):
             return inner(u,v)*dx + h*q*dx
 
-        ar0 = Constant(alpha[0].real)
-        ai0 = Constant(alpha[0].imag)
+        nalpha = len(alpha)
+        # indices to make solvers with
+        alpha_is = [0,nalpha-1]
+        ar0 = []
+        ai0 = []
+        for l in range(len(alpha_is)):
+            ar0.append(Constant(alpha[alpha_is].real))
+            ari.append(Constant(alpha[nalpha-1].real))
+            
+        # indices to select which solvers to use for each coefficient
+        self.solver_list = [0]*nalpha/2 + [1]*(nalpha-nalpha/2)
+
+        self.ai = Constant(alpha[0].imag)
+        self.bi = Constant(beta_re[0].imag)
+        self.ar = Constant(alpha[0].real)
+        self.br = Constant(beta_re[0].real)
         
-        for i in range(len(alpha)):
-            ai = Constant(alpha[i].imag)
-            bi = Constant(beta_re[i].imag)
-            ar = Constant(alpha[i].real)
-            br = Constant(beta_re[i].real)
+        for i in range(len(solver_list)):
 
             # (1           -sgn(ai))*(ar + L    -ai   )
             # (sgn(ai)            1) (ai        ar + L)
 
             # (1,1) block
-            a = (ar - abs(ai))*inner_m(u1r, h1r, wr, phr)
+            a = (self.ar - abs(self.ai))*inner_m(u1r, h1r, wr, phr)
             a += L_op(u1r, h1r, wr, phr)
             # (1,2) block
-            a += (-ai - sign(ai)*ar)*inner_m(u1i, h1i, wr, phr)
-            a += -sign(ai)*L_op(u1i, h1i, wr, phr)
+            a += (-self.ai - sign(self.ai)*self.ar)*inner_m(u1i, h1i, wr, phr)
+            a += -sign(self.ai)*L_op(u1i, h1i, wr, phr)
             # (2,1) block
-            a += (ai + sign(ai)*ar)*inner_m(u1r, h1r, wi, phi)
-            a += +sign(ai)*L_op(u1r, h1r, wi, phi)
+            a += (self.ai + sign(self.ai)*self.ar)*inner_m(u1r, h1r, wi, phi)
+            a += +sign(self.ai)*L_op(u1r, h1r, wi, phi)
             # (2,2) block
-            a += (ar - abs(ai))*inner_m(u1i, h1i, wi, phi)
+            a += (self.ar - abs(self.ai))*inner_m(u1i, h1i, wi, phi)
             a += L_op(u1i, h1i, wi, phi)
 
             # (1           -sgn(ai))*(br*inner)
             # (sgn(ai)            1) (bi*inner)
             
             L = (
-                (br - sign(ai)*bi)*(inner(wr,self.u0)*dx
-                                   + phr*self.h0*dx)
-                +(+sign(ai)*br + bi)*(inner(wi,self.u0)*dx
-                                      + phi*self.h0*dx)
+                (self.br - sign(self.ai)*self.bi)*(inner(wr,self.u0)*dx
+                                                   + phr*self.h0*dx)
+                +(+sign(self.ai)*self.br + self.bi)*(inner(wi,self.u0)*dx
+                                                     + phi*self.h0*dx)
             )
 
             # (1,1) block
-            aP = (ar - abs(ai))*inner_m(u1r, h1r, wr, phr)
+            aP = (ar0[i] - abs(ai0[i]))*inner_m(u1r, h1r, wr, phr)
             aP += L_op(u1r, h1r, wr, phr)
             # (2,2) block
-            aP += (ar - abs(ai))*inner_m(u1i, h1i, wi, phi)
+            aP += (ar0[i] - abs(ai0)[i])*inner_m(u1i, h1i, wi, phi)
             aP += L_op(u1i, h1i, wi, phi)
             
-            myprob = LinearVariationalProblem(a, L, self.w, aP=aP)
+            myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
+                                              constant_jacobian=False)
 
             self.rexi_solver.append(LinearVariationalSolver(
                 myprob, solver_parameters=solver_parameters))
@@ -129,8 +141,11 @@ class Rexi(object):
         self.w_sum.assign(0.)
 
         for i in range(len(self.rexi_solver)):
-            print(self.alpha[i])
-            self.rexi_solver[i].solve()
+            self.ar.assign(alpha[i].real)
+            self.ai.assign(alpha[i].imag)
+            self.br.assign(beta_re[i].real)
+            self.bi.assign(beta_re[i].imag)
+            self.rexi_solver[self.solver_list[i]].solve()
 
             self.w_sum += self.w
 
