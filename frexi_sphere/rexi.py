@@ -121,10 +121,11 @@ class Rexi(object):
             )
 
             # (1,1) block
-            aP = (ar0[i] - abs(ai0[i]))*inner_m(u1r, h1r, wr, phr)
+            si = self.solver_list[i]
+            aP = (ar0[si] - abs(ai0[si]))*inner_m(u1r, h1r, wr, phr)
             aP += L_op(u1r, h1r, wr, phr)
             # (2,2) block
-            aP += (ar0[i] - abs(ai0[i]))*inner_m(u1i, h1i, wi, phi)
+            aP += (ar0[si] - abs(ai0[si]))*inner_m(u1i, h1i, wi, phi)
             aP += L_op(u1i, h1i, wi, phi)
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
