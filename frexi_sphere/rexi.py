@@ -76,7 +76,7 @@ class Rexi(object):
         
         # This is where we set how many solvers we'd like and which
         # values to use: would be nice to handle this through the options.
-        alpha_is = [nalpha//4,3*nalpha//4]
+        alpha_is = [nalpha//3, 2*(nalpha//3), nalpha-1]
         ar0 = []
         ai0 = []
         for l in range(len(alpha_is)):
@@ -84,8 +84,9 @@ class Rexi(object):
             ai0.append(Constant(alpha[alpha_is[l]].imag))
             
         # indices to select which solvers to use for each coefficient
-        self.solver_list = [0]*(nalpha//2) + [1]*(nalpha-nalpha//2)
-
+        self.solver_list = [0]*(nalpha//3) + [1]*(nalpha//3) + [2]*(nalpha-2*(nalpha//3))
+        assert(len(self.solver_list) == len(alpha))
+        
         self.ai = Constant(alpha[0].imag)
         self.bi = Constant(beta_re[0].imag)
         self.ar = Constant(alpha[0].real)
@@ -139,7 +140,7 @@ class Rexi(object):
 
         self.w_sum.assign(0.)
 
-        for i in range(len(self.solver_list)):
+        for i in range(len(self.alpha)):
             self.ar.assign(self.alpha[i].real)
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
