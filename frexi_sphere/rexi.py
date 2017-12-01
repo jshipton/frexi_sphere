@@ -142,10 +142,10 @@ class Rexi(object):
         self.w_sum.assign(0.)
 
         for i in range(len(self.rexi_solver)):
-            self.ar.assign(alpha[i].real)
-            self.ai.assign(alpha[i].imag)
-            self.br.assign(beta_re[i].real)
-            self.bi.assign(beta_re[i].imag)
+            self.ar.assign(self.alpha[i].real)
+            self.ai.assign(self.alpha[i].imag)
+            self.br.assign(self.beta_re[i].real)
+            self.bi.assign(self.beta_re[i].imag)
             self.rexi_solver[self.solver_list[i]].solve()
 
             self.w_sum += self.w
