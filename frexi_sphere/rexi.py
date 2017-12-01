@@ -40,11 +40,15 @@ class Rexi(object):
                                         'pc_type': 'python',
                                         'pc_python_type': 'firedrake.HybridizationPC',
                                         'hybridization': {'ksp_type': 'preonly',
-                                                          'pc_type': 'ilu',
+                                                          'pc_type': 'lu',
                                                           'hdiv_residual_ksp_type': 'preonly',
-                                                          'hdiv_residual_pc_type': 'ilu', 
+                                                          'hdiv_residual_pc_type': 'lu', 
                                                           'hdiv_projection_ksp_type': 'preonly',
-                                                          'hdiv_projection_pc_type': 'ilu'}}
+                                                          'hdiv_projection_pc_type': 'lu'}}
+
+            lu_parameters = {'ksp_type':'preonly',
+                             'pc_type':'lu'}
+            
             solver_parameters = {"ksp_type": "gmres",
                                  'mat_type': 'matfree',
                                  "ksp_converged_reason": True,
@@ -70,7 +74,9 @@ class Rexi(object):
         def inner_m(u, h, v, q):
             return inner(u,v)*dx + h*q*dx
 
-
+        ar0 = Constant(alpha[0].real)
+        ai0 = Constant(alpha[0].imag)
+        
         for i in range(len(alpha)):
             ai = Constant(alpha[i].imag)
             bi = Constant(beta_re[i].imag)
