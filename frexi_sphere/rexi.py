@@ -92,7 +92,7 @@ class Rexi(object):
         self.ar = Constant(alpha[0].real)
         self.br = Constant(beta_re[0].real)
         
-        for i in range(len(self.solver_list)):
+        for i in range(len(alpha_is)):
 
             # (1           -sgn(ai))*(ar + L    -ai   )
             # (sgn(ai)            1) (ai        ar + L)
@@ -121,11 +121,10 @@ class Rexi(object):
             )
 
             # (1,1) block
-            si = self.solver_list[i]
-            aP = (ar0[si] - abs(ai0[si]))*inner_m(u1r, h1r, wr, phr)
+            aP = (ar0[i] - abs(ai0[i]))*inner_m(u1r, h1r, wr, phr)
             aP += L_op(u1r, h1r, wr, phr)
             # (2,2) block
-            aP += (ar0[si] - abs(ai0[si]))*inner_m(u1i, h1i, wi, phi)
+            aP += (ar0[i] - abs(ai0[i]))*inner_m(u1i, h1i, wi, phi)
             aP += L_op(u1i, h1i, wi, phi)
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
