@@ -61,7 +61,7 @@ class Rexi(object):
                                  "fieldsplit_0": hybridisation_parameters,
                                  "fieldsplit_1": hybridisation_parameters}
             # For reusing solver with different A, but same aP.
-            #solver_parameters["ksp_reuse_preconditioner"] = True
+            solver_parameters["ksp_reuse_preconditioner"] = True
 
         self.w_sum = Function(W)
         self.w = Function(W)
@@ -82,7 +82,7 @@ class Rexi(object):
         ai0 = []
         for l in range(len(alpha_is)):
             ar0.append(Constant(alpha[alpha_is[l]].real))
-            ai0.append(Constant(alpha[alpha_is[l]].real))
+            ai0.append(Constant(alpha[alpha_is[l]].imag))
             
         # indices to select which solvers to use for each coefficient
         self.solver_list = [0]*(nalpha//2) + [1]*(nalpha-nalpha//2)
@@ -140,7 +140,7 @@ class Rexi(object):
 
         self.w_sum.assign(0.)
 
-        for i in range(len(self.rexi_solver)):
+        for i in range(len(self.solver_list)):
             self.ar.assign(self.alpha[i].real)
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
