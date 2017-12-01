@@ -77,7 +77,10 @@ class Rexi(object):
 
         nalpha = len(alpha)
         # indices to make solvers with
-        alpha_is = [0,nalpha-1]
+        
+        # This is where we set how many solvers we'd like and which
+        # values to use: would be nice to handle this through the options.
+        alpha_is = [nalpha//4,3*nalpha//4]
         ar0 = []
         ai0 = []
         for l in range(len(alpha_is)):
