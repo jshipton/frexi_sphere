@@ -41,11 +41,7 @@ class Rexi(object):
                                         'pc_type': 'python',
                                         'pc_python_type': 'firedrake.HybridizationPC',
                                         'hybridization': {'ksp_type': 'preonly',
-                                                          'pc_type': 'lu',
-                                                          'hdiv_residual_ksp_type': 'preonly',
-                                                          'hdiv_residual_pc_type': 'lu', 
-                                                          'hdiv_projection_ksp_type': 'preonly',
-                                                          'hdiv_projection_pc_type': 'lu'}}
+                                                          'pc_type': 'lu'}}
 
             lu_parameters = {'ksp_type':'preonly',
                              'pc_type':'lu'}
