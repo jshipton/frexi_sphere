@@ -46,7 +46,7 @@ class Rexi(object):
             lu_parameters = {'ksp_type':'preonly',
                              'pc_type':'lu'}
             
-            solver_parameters = {"ksp_type": "gmres",
+            solver_hyb_parameters = {"ksp_type": "gmres",
                                  'mat_type': 'matfree',
                                  "ksp_converged_reason": True,
                                  "pc_type": "fieldsplit",
@@ -56,6 +56,25 @@ class Rexi(object):
                                  "pc_fieldsplit_1_fields": "2,3",
                                  "fieldsplit_0": hybridisation_parameters,
                                  "fieldsplit_1": hybridisation_parameters}
+
+            mass_parameters = {"ksp_type":"preonly",
+                               "pc_type":"lu"}
+
+            helm_parameters = {"ksp_type":"preonly",
+                               "pc_type":"lu"}
+
+            
+            solver_IP_parameters = {"ksp_type": "gmres",
+                                    'mat_type': 'matfree',
+                                    "pc_python_type": "firedrake.AssembledPC",
+                                    "ksp_converged_reason": True,
+                                    "pc_type": "fieldsplit",
+                                    "pc_fieldsplit_type": "multiplicative",
+                                    "pc_fieldsplit_off_diag_use_amat": True,
+                                    "fieldsplit_0": mass_parameters,
+                                    "fieldsplit_1": helm_parameters,
+                                    "fieldsplit_2": mass_parameters,
+                                    "fieldsplit_3": helm_parameters}
             # For reusing solver with different A, but same aP.
             solver_parameters["ksp_reuse_preconditioner"] = True
 
@@ -121,17 +140,47 @@ class Rexi(object):
             )
 
             # (1,1) block
-            aP = (ar0[i] - abs(ai0[i]))*inner_m(u1r, h1r, wr, phr)
-            aP += L_op(u1r, h1r, wr, phr)
-            # (2,2) block
-            aP += (ar0[i] - abs(ai0[i]))*inner_m(u1i, h1i, wi, phi)
-            aP += L_op(u1i, h1i, wi, phi)
+            lform = -dt*f*inner(v,perp(u))*dx
+            lform += dt*g*div(v)*h*dx
+
+            # derivation of reduced h equation (we ignore derivatives of f)
+            # eqn is
+            # a u - dt * f * u^\perp - dt * g * grad(h) = ...
+            # a h - dt*H*div(u) = ...
+            # Helmholtz decomposition
+            # u = grad(phi) + gradperp(psi)
+            # split:
+            # a grad(phi) + dt * f * grad(psi) - dt * g * grad(h) = ...
+            # a grad^\perp(psi) - dt * f * grad^\perp (phi) = ...
+            # eliminate psi from phi eqn
+            # a^2 grad(phi) + (dt * f)^2 * grad(phi) - a*dt*g*grad(h) = ...
+            # drop grads
+            # a^2 phi + (dt * f)^2 * phi - a*dt*g*h = ...
+            # rearrange
+            # phi + (dt * f)^2 * phi = a/(a^2 + (dt*f)^2)*dt*g*h = ...
+            # eliminate from h eqn
+            # a h - a/(a^2 + (dt*f)^2)*dt^2*g*H*Laplace(h) = ...
+
+            # The coefficient for the preconditioning operator
+            aPa = ar0[i] - abs(ai0[i])
+            # wr equation
+            aP = (apa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr)
+                  + dt*g*div(wr)*h1r)*dx
+            # phr equation
+            aP += apa*(phr*h1r + dt**2*g*H/(apa**2 + dt**2*f**2)*
+                       inner(grad(phr),grad(h1r)))*dx
+            # wi equation
+            aP = (apa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi)
+                  + dt*g*div(wi)*h1i)*dx
+            # phi equation
+            aP += apa*(phi*h1i + dt**2*g*H/(apa**2 + dt**2*f**2)*
+                       inner(grad(phi),grad(h1i)))*dx
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
                                               constant_jacobian=False)
 
             self.rexi_solver.append(LinearVariationalSolver(
-                myprob, solver_parameters=solver_parameters))
+                myprob, solver_parameters=solver_IP_parameters))
 
     def solve(self, u0, h0, dt):
         self.u0.assign(u0)
