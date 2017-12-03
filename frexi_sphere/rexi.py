@@ -158,20 +158,24 @@ class Rexi(object):
             # eliminate from h eqn
             # a h - a/(a^2 + (dt*f)^2)*dt^2*g*H*Laplace(h) = ...
 
+            IPcoeff = Constant(10.)
+            
             # The coefficient for the preconditioning operator
             aPa = ar0[i] - abs(ai0[i])
+            sigma = dt**2*g*H/(aPa**2 + dt**2*f**2)
             # wr equation
             aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr)
                   + dt*g*div(wr)*h1r)*dx
             # phr equation
-            aP += aPa*(phr*h1r + dt**2*g*H/(aPa**2 + dt**2*f**2)*
-                       inner(grad(phr),grad(h1r)))*dx
+            aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
+            Ap += IPcoeff*sigma*jump(phr, h1r)*dS
+            
             # wi equation
             aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi)
                   + dt*g*div(wi)*h1i)*dx
             # phi equation
-            aP += aPa*(phi*h1i + dt**2*g*H/(aPa**2 + dt**2*f**2)*
-                       inner(grad(phi),grad(h1i)))*dx
+            aP += aPa*(phi*h1i + sigma*inner(grad(phi),grad(h1i)))*dx
+            Ap += IPcoeff*sigma*jump(phi, h1i)*dS
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
                                               constant_jacobian=False)
