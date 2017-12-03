@@ -35,47 +35,22 @@ class Rexi(object):
                                  'mat_type': 'aij',
                                  'pc_type':'lu',
                                  'pc_factor_mat_solver_package': 'mumps'}
-        else:
-                        
-            hybridisation_parameters = {'ksp_type': 'preonly',
-                                        'pc_type': 'python',
-                                        'pc_python_type': 'firedrake.HybridizationPC',
-                                        'hybridization': {'ksp_type': 'preonly',
-                                                          'pc_type': 'lu'}}
-
-            lu_parameters = {'ksp_type':'preonly',
-                             'pc_type':'lu'}
-            
-            solver_hyb_parameters = {"ksp_type": "gmres",
-                                 'mat_type': 'matfree',
-                                 "ksp_converged_reason": True,
-                                 "pc_type": "fieldsplit",
-                                 "pc_fieldsplit_type": "multiplicative",
-                                 "pc_fieldsplit_off_diag_use_amat": True,
-                                 "pc_fieldsplit_0_fields": "0,1",
-                                 "pc_fieldsplit_1_fields": "2,3",
-                                 "fieldsplit_0": hybridisation_parameters,
-                                 "fieldsplit_1": hybridisation_parameters}
-
+        else:                        
             mass_parameters = {"ksp_type":"preonly",
+                               "pc_type":"python",
+                               "pc_python_type": "firedrake.AssembledPC",
                                "assembled_pc_type":"lu"}
-        
-            helm_parameters = {"ksp_type":"preonly",
-                               "assembled_pc_type":"lu"}
-
             
             solver_IP_parameters = {"ksp_type": "gmres",
                                     'mat_type': 'matfree',
-                                    "pc_python_type": "firedrake.AssembledPC",
                                     "ksp_converged_reason": True,
                                     "pc_type": "fieldsplit",
-                                    "pc_fieldsplit_type": "additive",
+                                    "pc_fieldsplit_type": "multiplicative",
                                     "pc_fieldsplit_off_diag_use_amat": True,
                                     "fieldsplit_0": mass_parameters,
-                                    "fieldsplit_1": helm_parameters,
+                                    "fieldsplit_1": mass_parameters,
                                     "fieldsplit_2": mass_parameters,
-                                    "fieldsplit_3": helm_parameters,
-            # For reusing solver with different A, but same aP.
+                                    "fieldsplit_3": mass_parameters,
                                     "ksp_reuse_preconditioner":True}
 
 
@@ -149,12 +124,14 @@ class Rexi(object):
             # split:
             # a grad(phi) + dt * f * grad(psi) - dt * g * grad(h) = ...
             # a grad^\perp(psi) - dt * f * grad^\perp (phi) = ...
+            # drop grads
+            # a psi - dt * f * phi = ...
             # eliminate psi from phi eqn
             # a^2 grad(phi) + (dt * f)^2 * grad(phi) - a*dt*g*grad(h) = ...
             # drop grads
             # a^2 phi + (dt * f)^2 * phi - a*dt*g*h = ...
             # rearrange
-            # phi + (dt * f)^2 * phi = a/(a^2 + (dt*f)^2)*dt*g*h = ...
+            # phi = a/(a^2 + (dt*f)^2)*dt*g*h + ...
             # eliminate from h eqn
             # a h - a/(a^2 + (dt*f)^2)*dt^2*g*H*Laplace(h) = ...
 
@@ -162,23 +139,26 @@ class Rexi(object):
             Farea = FacetArea(setup.mesh)
             Cvol = CellVolume(setup.mesh)
             h0 = avg(Cvol)/Farea
+            n = FacetNormal(setup.mesh)
             
             # The coefficient for the preconditioning operator
             aPa = ar0[i] - abs(ai0[i])
             sigma = dt**2*g*H/(aPa**2 + dt**2*f**2)
             # wr equation
-            aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr)
-                  + dt*g*div(wr)*h1r)*dx
+            aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr))*dx
             # phr equation
             aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
-            Ap += IPcoeff/h0*sigma*jump(phr, h1r)*dS
+            aP += aPa*IPcoeff/h0*sigma*jump(phr, h1r)*dS
+            #aP += -aPa*sigma*inner(jump(phr,n),avg(grad(h1r)))*dS
+            #aP += -aPa*sigma*inner(jump(h1r,n),avg(grad(phr)))*dS
             
             # wi equation
-            aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi)
-                  + dt*g*div(wi)*h1i)*dx
+            aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi))*dx
             # phi equation
             aP += aPa*(phi*h1i + sigma*inner(grad(phi),grad(h1i)))*dx
-            Ap += IPcoeff/h0*sigma*jump(phi, h1i)*dS
+            aP += aPa*IPcoeff/h0*sigma*jump(phi, h1i)*dS
+            #aP += -aPa*sigma*inner(jump(phi,n),avg(grad(h1i)))*dS
+            #aP += -aPa*sigma*inner(jump(h1i,n),avg(grad(phi)))*dS
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
                                               constant_jacobian=False)
