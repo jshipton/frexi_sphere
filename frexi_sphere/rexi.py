@@ -159,6 +159,9 @@ class Rexi(object):
             # a h - a/(a^2 + (dt*f)^2)*dt^2*g*H*Laplace(h) = ...
 
             IPcoeff = Constant(10.)
+            Farea = FacetArea(setup.mesh)
+            Cvol = CellVolume(setup.mesh)
+            h0 = avg(Cvol)/Farea
             
             # The coefficient for the preconditioning operator
             aPa = ar0[i] - abs(ai0[i])
@@ -168,14 +171,14 @@ class Rexi(object):
                   + dt*g*div(wr)*h1r)*dx
             # phr equation
             aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
-            Ap += IPcoeff*sigma*jump(phr, h1r)*dS
+            Ap += IPcoeff/h0*sigma*jump(phr, h1r)*dS
             
             # wi equation
             aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi)
                   + dt*g*div(wi)*h1i)*dx
             # phi equation
             aP += aPa*(phi*h1i + sigma*inner(grad(phi),grad(h1i)))*dx
-            Ap += IPcoeff*sigma*jump(phi, h1i)*dS
+            Ap += IPcoeff/h0*sigma*jump(phi, h1i)*dS
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
                                               constant_jacobian=False)
