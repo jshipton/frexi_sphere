@@ -58,10 +58,10 @@ class Rexi(object):
                                  "fieldsplit_1": hybridisation_parameters}
 
             mass_parameters = {"ksp_type":"preonly",
-                               "pc_type":"lu"}
-
+                               "assembled_pc_type":"lu"}
+        
             helm_parameters = {"ksp_type":"preonly",
-                               "pc_type":"lu"}
+                               "assembled_pc_type":"lu"}
 
             
             solver_IP_parameters = {"ksp_type": "gmres",
@@ -69,14 +69,15 @@ class Rexi(object):
                                     "pc_python_type": "firedrake.AssembledPC",
                                     "ksp_converged_reason": True,
                                     "pc_type": "fieldsplit",
-                                    "pc_fieldsplit_type": "multiplicative",
+                                    "pc_fieldsplit_type": "additive",
                                     "pc_fieldsplit_off_diag_use_amat": True,
                                     "fieldsplit_0": mass_parameters,
                                     "fieldsplit_1": helm_parameters,
                                     "fieldsplit_2": mass_parameters,
-                                    "fieldsplit_3": helm_parameters}
+                                    "fieldsplit_3": helm_parameters,
             # For reusing solver with different A, but same aP.
-            solver_parameters["ksp_reuse_preconditioner"] = True
+                                    "ksp_reuse_preconditioner":True}
+
 
         self.w_sum = Function(W)
         self.w = Function(W)
@@ -139,10 +140,6 @@ class Rexi(object):
                                                      + phi*self.h0*dx)
             )
 
-            # (1,1) block
-            lform = -dt*f*inner(v,perp(u))*dx
-            lform += dt*g*div(v)*h*dx
-
             # derivation of reduced h equation (we ignore derivatives of f)
             # eqn is
             # a u - dt * f * u^\perp - dt * g * grad(h) = ...
@@ -164,16 +161,16 @@ class Rexi(object):
             # The coefficient for the preconditioning operator
             aPa = ar0[i] - abs(ai0[i])
             # wr equation
-            aP = (apa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr)
+            aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr)
                   + dt*g*div(wr)*h1r)*dx
             # phr equation
-            aP += apa*(phr*h1r + dt**2*g*H/(apa**2 + dt**2*f**2)*
+            aP += aPa*(phr*h1r + dt**2*g*H/(aPa**2 + dt**2*f**2)*
                        inner(grad(phr),grad(h1r)))*dx
             # wi equation
-            aP = (apa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi)
+            aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi)
                   + dt*g*div(wi)*h1i)*dx
             # phi equation
-            aP += apa*(phi*h1i + dt**2*g*H/(apa**2 + dt**2*f**2)*
+            aP += aPa*(phi*h1i + dt**2*g*H/(aPa**2 + dt**2*f**2)*
                        inner(grad(phi),grad(h1i)))*dx
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
