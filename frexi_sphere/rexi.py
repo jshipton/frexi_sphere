@@ -29,6 +29,12 @@ class Rexi(object):
         wr, phr, wi, phi = TestFunctions(W)
 
         self.rexi_solver = []
+
+        IPcoeff = Constant(10.)
+        Farea = FacetArea(setup.mesh)
+        Cvol = CellVolume(setup.mesh)
+        h0 = avg(Cvol)/Farea
+        n = FacetNormal(setup.mesh)
         
         if direct_solve:
             solver_parameters = {'ksp_type':'preonly',
@@ -86,6 +92,43 @@ class Rexi(object):
         self.bi = Constant(beta_re[0].imag)
         self.ar = Constant(alpha[0].real)
         self.br = Constant(beta_re[0].real)
+
+        # in situ hacked-up test code
+        Wtest = MixedFunctionSpace((V1,V2))
+        u1r, h1r = TrialFunctions(Wtest)
+        wr, phr = TestFunctions(Wtest)
+        a = (self.ar - abs(self.ai))*inner_m(u1r, h1r, wr, phr)
+        a += L_op(u1r, h1r, wr, phr)
+
+        aPa = ar0[0] - abs(ai0[0])
+        aPa = self.ar - abs(self.ai)
+        sigma = dt**2*g*H/(aPa**2 + dt**2*f**2)
+        # wr equation
+        aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr))*dx
+        # phr equation
+        aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
+        aP += aPa*IPcoeff/h0*sigma*jump(phr)*jump(h1r)*dS
+        #aP += -aPa*sigma*inner(jump(phr,n),avg(grad(h1r)))*dS
+        #aP += -aPa*sigma*inner(jump(h1r,n),avg(grad(phr)))*dS
+        x = SpatialCoordinate(setup.mesh)
+        L = phr*cos(x[0]+x[1])*dx
+        v_out = Function(Wtest)
+        testprob = LinearVariationalProblem(a,L,v_out,aP=aP)
+        testparams = {"ksp_type": "gmres",
+                      'mat_type': 'matfree',
+                      "ksp_converged_reason": True,
+                      "pc_type": "fieldsplit",
+                      "pc_fieldsplit_type": "additive",
+                      "pc_fieldsplit_off_diag_use_amat": True,
+                      "fieldsplit_0": mass_parameters,
+                      "fieldsplit_1": mass_parameters,
+                      "ksp_reuse_preconditioner":True}
+        testsolver = LinearVariationalSolver(testprob,
+                                             solver_parameters=testparams)
+        testsolver.solve()
+
+        u1r, h1r, u1i, h1i = TrialFunctions(W)
+        wr, phr, wi, phi = TestFunctions(W)
         
         for i in range(len(alpha_is)):
 
@@ -135,11 +178,6 @@ class Rexi(object):
             # eliminate from h eqn
             # a h - a/(a^2 + (dt*f)^2)*dt^2*g*H*Laplace(h) = ...
 
-            IPcoeff = Constant(10.)
-            Farea = FacetArea(setup.mesh)
-            Cvol = CellVolume(setup.mesh)
-            h0 = avg(Cvol)/Farea
-            n = FacetNormal(setup.mesh)
             
             # The coefficient for the preconditioning operator
             aPa = ar0[i] - abs(ai0[i])
@@ -148,7 +186,7 @@ class Rexi(object):
             aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr))*dx
             # phr equation
             aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
-            aP += aPa*IPcoeff/h0*sigma*jump(phr, h1r)*dS
+            aP += aPa*IPcoeff/h0*sigma*jump(phr)*jump(h1r)*dS
             #aP += -aPa*sigma*inner(jump(phr,n),avg(grad(h1r)))*dS
             #aP += -aPa*sigma*inner(jump(h1r,n),avg(grad(phr)))*dS
             
@@ -156,7 +194,7 @@ class Rexi(object):
             aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi))*dx
             # phi equation
             aP += aPa*(phi*h1i + sigma*inner(grad(phi),grad(h1i)))*dx
-            aP += aPa*IPcoeff/h0*sigma*jump(phi, h1i)*dS
+            aP += aPa*IPcoeff/h0*sigma*jump(phi)*jump(h1i)*dS
             #aP += -aPa*sigma*inner(jump(phi,n),avg(grad(h1i)))*dS
             #aP += -aPa*sigma*inner(jump(h1i,n),avg(grad(phi)))*dS
             
