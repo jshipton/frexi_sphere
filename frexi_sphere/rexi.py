@@ -36,15 +36,20 @@ class Rexi(object):
                                  'pc_type':'lu',
                                  'pc_factor_mat_solver_package': 'mumps'}
         else:
-                        
+            lu_parameters = {'ksp_type':'preonly',
+                             'pc_type':'lu'}
+
+            gamg_parameters = {'ksp_type':'richardson',
+                               'pc_type':'gamg',
+                               'mg_levels_pc_type':'bjacobi',
+                               'mg_levels_sub_pc_type':'sor',
+                               'ksp_max_it':4,
+                               'ksp_reuse_preconditioner':True}
+
             hybridisation_parameters = {'ksp_type': 'preonly',
                                         'pc_type': 'python',
                                         'pc_python_type': 'firedrake.HybridizationPC',
-                                        'hybridization': {'ksp_type': 'preonly',
-                                                          'pc_type': 'lu'}}
-
-            lu_parameters = {'ksp_type':'preonly',
-                             'pc_type':'lu'}
+                                        'hybridization': lu_parameters}
             
             solver_parameters = {"ksp_type": "gmres",
                                  'mat_type': 'matfree',
