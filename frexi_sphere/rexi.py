@@ -1,4 +1,5 @@
 from firedrake import *
+import numpy as np
 
 class Rexi(object):
 
@@ -12,9 +13,12 @@ class Rexi(object):
         self.u0 = Function(V1, name="u")
         self.h0 = Function(V2, name="h")
 
-        f = setup.params.f
+        f = Constant(setup.params.f)
+        self.f = f
         g = Constant(setup.params.g)
+        self.g = g
         H = Constant(setup.params.H)
+        self.H = H
         self.dt = Constant(1.)
         dt = self.dt
 
@@ -33,7 +37,7 @@ class Rexi(object):
         IPcoeff = Constant(10.)
         Farea = FacetArea(setup.mesh)
         Cvol = CellVolume(setup.mesh)
-        h0 = avg(Cvol)/Farea
+        deltax = avg(Cvol)/Farea
         n = FacetNormal(setup.mesh)
         
         if direct_solve:
@@ -46,20 +50,52 @@ class Rexi(object):
                                "pc_type":"python",
                                "pc_python_type": "firedrake.AssembledPC",
                                "assembled_pc_type":"lu"}
+
+            helm_parameters = {"ksp_type":"preonly",
+                               "pc_type":"python",
+                               "pc_python_type": "firedrake.AssembledPC",
+                               "assembled_pc_type":"lu"}
+
+            gmres_parameters = {"ksp_type":"gmres",
+                                "pc_type":"python",
+                                "pc_python_type": "firedrake.AssembledPC",
+                                "assembled_pc_type":"lu"}
             
             solver_IP_parameters = {"ksp_type": "gmres",
+                                    "ksp_monitor": True,
                                     'mat_type': 'matfree',
+                                    'ksp_rtol': 1.0e-6,
                                     "ksp_converged_reason": True,
                                     "pc_type": "fieldsplit",
                                     "pc_fieldsplit_type": "multiplicative",
                                     "pc_fieldsplit_off_diag_use_amat": True,
-                                    "fieldsplit_0": mass_parameters,
+                                    "fieldsplit_0": helm_parameters,
                                     "fieldsplit_1": mass_parameters,
-                                    "fieldsplit_2": mass_parameters,
+                                    "fieldsplit_2": helm_parameters,
                                     "fieldsplit_3": mass_parameters,
                                     "ksp_reuse_preconditioner":True}
 
+            nested_params = {"ksp_type": "fgmres",
+                             "ksp_monitor": True,
+                             'mat_type': 'matfree',
+                             'ksp_rtol': 1.0e-6,
+                             "ksp_converged_reason": True,
+                             "pc_type": "fieldsplit",
+                             "pc_fieldsplit_type": "multiplicative",
+                             "pc_fieldsplit_off_diag_use_amat": True,
+                             "pc_fieldsplit_0_fields": "0,1",
+                             "pc_fieldsplit_1_fields": "2,3",
+                             "fieldsplit_0": gmres_parameters,
+                             "fieldsplit_1": gmres_parameters,
+                             "ksp_reuse_preconditioner":True}
 
+
+            solver_LU_parameters = {'ksp_type':'gmres',
+                                    'ksp_monitor':True,
+                                    'mat_type': 'aij',
+                                    'pc_type':'lu',
+                                    'pc_factor_mat_solver_package': 'mumps'}
+            
         self.w_sum = Function(W)
         self.w = Function(W)
 
@@ -107,11 +143,11 @@ class Rexi(object):
         aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr))*dx
         # phr equation
         aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
-        aP += aPa*IPcoeff/h0*sigma*jump(phr)*jump(h1r)*dS
+        aP += aPa*IPcoeff/deltax*sigma*jump(phr)*jump(h1r)*dS
         #aP += -aPa*sigma*inner(jump(phr,n),avg(grad(h1r)))*dS
         #aP += -aPa*sigma*inner(jump(h1r,n),avg(grad(phr)))*dS
         x = SpatialCoordinate(setup.mesh)
-        L = phr*cos(x[0]+x[1])*dx
+        L = phr*cos(x[0]+x[1])*dx + wr[0]*sin(x[0]*x[1])*dx
         v_out = Function(Wtest)
         testprob = LinearVariationalProblem(a,L,v_out,aP=aP)
         testparams = {"ksp_type": "gmres",
@@ -129,6 +165,8 @@ class Rexi(object):
 
         u1r, h1r, u1i, h1i = TrialFunctions(W)
         wr, phr, wi, phi = TestFunctions(W)
+
+        self.L = []
         
         for i in range(len(alpha_is)):
 
@@ -157,7 +195,8 @@ class Rexi(object):
                 +(+sign(self.ai)*self.br + self.bi)*(inner(wi,self.u0)*dx
                                                      + phi*self.h0*dx)
             )
-
+            self.L.append(L)
+            
             # derivation of reduced h equation (we ignore derivatives of f)
             # eqn is
             # a u - dt * f * u^\perp - dt * g * grad(h) = ...
@@ -178,37 +217,48 @@ class Rexi(object):
             # eliminate from h eqn
             # a h - a/(a^2 + (dt*f)^2)*dt^2*g*H*Laplace(h) = ...
 
+
             
             # The coefficient for the preconditioning operator
-            aPa = ar0[i] - abs(ai0[i])
+            aPa = Constant(ar0[i] - abs(ai0[i]))
             sigma = dt**2*g*H/(aPa**2 + dt**2*f**2)
             # wr equation
-            aP = (aPa*inner(u1r,wr) - dt*f*inner(perp(u1r),wr))*dx
+            #aP = aPa*inner(u1r,wr)*dx
             # phr equation
-            aP += aPa*(phr*h1r + sigma*inner(grad(phr),grad(h1r)))*dx
-            aP += aPa*IPcoeff/h0*sigma*jump(phr)*jump(h1r)*dS
-            #aP += -aPa*sigma*inner(jump(phr,n),avg(grad(h1r)))*dS
-            #aP += -aPa*sigma*inner(jump(h1r,n),avg(grad(phr)))*dS
-            
+            #aP += aPa*phr*h1r*dx
+                        
             # wi equation
-            aP = (aPa*inner(u1i,wi) - dt*f*inner(perp(u1i),wi))*dx
+            #aP = aPa*inner(u1i,wi)*dx
+            #aP -= aPa*dt*f*inner(perp(u1i),wi))*dx
             # phi equation
-            aP += aPa*(phi*h1i + sigma*inner(grad(phi),grad(h1i)))*dx
-            aP += aPa*IPcoeff/h0*sigma*jump(phi)*jump(h1i)*dS
-            #aP += -aPa*sigma*inner(jump(phi,n),avg(grad(h1i)))*dS
-            #aP += -aPa*sigma*inner(jump(h1i,n),avg(grad(phi)))*dS
+            #aP += aPa*phi*h1i*dx
+
+            # (1,1) block
+            aP = aPa*inner_m(u1r, h1r, wr, phr)
+            aP -= dt*f*inner(perp(u1r),wr)*dx
+            aP += aPa*sigma*inner(grad(phr),grad(h1r))*dx
+            aP += aPa*IPcoeff/deltax*sigma*jump(phr)*jump(h1r)*dS
+            
+            # (2,2) block
+            aP += aPa*inner_m(u1i, h1i, wi, phi)
+            aP -= dt*f*inner(perp(u1i),wi)*dx
+            aP += aPa*sigma*inner(grad(phi),grad(h1i))*dx
+            aP += aPa*IPcoeff/deltax*sigma*jump(phi)*jump(h1i)*dS
             
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
                                               constant_jacobian=False)
 
+            self.aPa = aPa
+            self.IPcoeff = IPcoeff
+            
             self.rexi_solver.append(LinearVariationalSolver(
-                myprob, solver_parameters=solver_IP_parameters))
+                myprob, solver_parameters=nested_params))
 
     def solve(self, u0, h0, dt):
         self.u0.assign(u0)
         self.h0.assign(h0)
         self.dt.assign(dt)
-
+        print(self.aPa.dat.data,self.f.dat.data,self.g.dat.data,self.H.dat.data,self.dt.dat.data,self.IPcoeff.dat.data)
         self.w_sum.assign(0.)
 
         for i in range(len(self.alpha)):
@@ -216,6 +266,8 @@ class Rexi(object):
             self.ai.assign(self.alpha[i].imag)
             self.br.assign(self.beta_re[i].real)
             self.bi.assign(self.beta_re[i].imag)
+            l0 = assemble(self.L[self.solver_list[i]]).dat.data
+            print(np.abs(l0[0]).max(),np.abs(l0[1]).max())
             self.rexi_solver[self.solver_list[i]].solve()
 
             self.w_sum += self.w
