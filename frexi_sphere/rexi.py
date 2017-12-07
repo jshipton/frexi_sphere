@@ -60,6 +60,14 @@ class Rexi(object):
                                 "pc_type":"python",
                                 "pc_python_type": "firedrake.AssembledPC",
                                 "assembled_pc_type":"lu"}
+
+            fieldsplit_parameters = {"ksp_type":"richardson",
+                                     "ksp_max_it":5,
+                                     "pc_type":"fieldsplit",
+                                     "pc_fieldsplit_type":"multiplicative",
+                                     "pc_fieldsplit_off_diag_use_amat": True,
+                                     "fieldsplit_0":helm_parameters,
+                                     "fieldsplit_1":helm_parameters}
             
             solver_IP_parameters = {"ksp_type": "gmres",
                                     "ksp_monitor": True,
@@ -85,10 +93,9 @@ class Rexi(object):
                              "pc_fieldsplit_off_diag_use_amat": True,
                              "pc_fieldsplit_0_fields": "0,1",
                              "pc_fieldsplit_1_fields": "2,3",
-                             "fieldsplit_0": gmres_parameters,
-                             "fieldsplit_1": gmres_parameters,
+                             "fieldsplit_0": fieldsplit_parameters,
+                             "fieldsplit_1": fieldsplit_parameters,
                              "ksp_reuse_preconditioner":True}
-
 
             solver_LU_parameters = {'ksp_type':'gmres',
                                     'ksp_monitor':True,
