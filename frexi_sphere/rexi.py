@@ -37,6 +37,7 @@ class Rexi(object):
                                  'pc_factor_mat_solver_package': 'mumps'}
         else:
             lu_parameters = {'ksp_type':'preonly',
+                             'mat_type':'aij',
                              'pc_type':'lu'}
 
             gamg_parameters = {'ksp_type':'richardson',
@@ -52,17 +53,17 @@ class Rexi(object):
                                         'hybridization': lu_parameters}
             
             solver_parameters = {"ksp_type": "gmres",
-                                 'mat_type': 'matfree',
+                                 'mat_type': 'aij',
                                  "ksp_converged_reason": True,
                                  "pc_type": "fieldsplit",
                                  "pc_fieldsplit_type": "multiplicative",
                                  "pc_fieldsplit_off_diag_use_amat": True,
                                  "pc_fieldsplit_0_fields": "0,1",
                                  "pc_fieldsplit_1_fields": "2,3",
-                                 "fieldsplit_0": hybridisation_parameters,
-                                 "fieldsplit_1": hybridisation_parameters}
+                                 "fieldsplit_0": lu_parameters,
+                                 "fieldsplit_1": lu_parameters}
             # For reusing solver with different A, but same aP.
-            solver_parameters["ksp_reuse_preconditioner"] = True
+            #solver_parameters["ksp_reuse_preconditioner"] = True
 
         self.w_sum = Function(W)
         self.w = Function(W)
@@ -81,7 +82,7 @@ class Rexi(object):
         
         # This is where we set how many solvers we'd like and which
         # values to use: would be nice to handle this through the options.
-        alpha_is = [nalpha//3, 2*(nalpha//3), nalpha-1]
+        alpha_is = [nalpha//6, nalpha//2, 5*(nalpha//6), nalpha-1]
         ar0 = []
         ai0 = []
         for l in range(len(alpha_is)):
@@ -89,7 +90,7 @@ class Rexi(object):
             ai0.append(Constant(alpha[alpha_is[l]].imag))
             
         # indices to select which solvers to use for each coefficient
-        self.solver_list = [0]*(nalpha//3) + [1]*(nalpha//3) + [2]*(nalpha-2*(nalpha//3))
+        self.solver_list = [0]*(nalpha//3) + [1]*(nalpha//3) + [2]*(nalpha-2*(nalpha//3)-4) + [3]*4
         assert(len(self.solver_list) == len(alpha))
         
         self.ai = Constant(alpha[0].imag)
@@ -131,7 +132,7 @@ class Rexi(object):
             # (2,2) block
             aP += (ar0[i] - abs(ai0[i]))*inner_m(u1i, h1i, wi, phi)
             aP += L_op(u1i, h1i, wi, phi)
-            
+
             myprob = LinearVariationalProblem(a, L, self.w, aP=aP,
                                               constant_jacobian=False)
 
