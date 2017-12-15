@@ -13,7 +13,7 @@ class Rexi(object):
         self.u0 = Function(V1, name="u")
         self.h0 = Function(V2, name="h")
 
-        f = Constant(setup.params.f)
+        f = setup.params.f
         self.f = f
         g = Constant(setup.params.g)
         self.g = g
