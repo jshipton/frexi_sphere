@@ -31,7 +31,7 @@ h = 0.2
 M = 64
 
 # make timestepper
-timestepper = CoarsePropagator(setup, dt, True, h, M, True, 1./dt, 100.)
+timestepper = CoarsePropagator(setup, dt, False, h, M, True, 1./dt, 100.)
 
 # output file and output fields
 dirname = 'CP_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)

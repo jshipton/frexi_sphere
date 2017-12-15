@@ -67,14 +67,14 @@ class SetupShallowWater(object):
     def polar_wave(self):
         self.params = ShallowWaterParameters()
         x = SpatialCoordinate(self.mesh)
-        R = self.mesh._icosahedral_sphere
+        R = self.mesh._radius
         Dexpr = Expression("R*acos(fmin(((x[0]*x0 + x[1]*x1 + x[2]*x2)/(R*R)), 1.0)) < rc ? 50.*h0*(1 + cos(pi*R*acos(fmin(((x[0]*x0 + x[1]*x1 + x[2]*x2)/(R*R)), 1.0))/rc)) : 0.0", R=R, rc=R/3., h0=self.params.H, x0=0.0, x1=0.0, x2=R)
         self.h0.interpolate(Dexpr)
 
     def linear_w2(self, topography=False):
         self.params = ShallowWaterParameters(H=2000.)
         x = SpatialCoordinate(self.mesh)
-        R = self.mesh._icosahedral_sphere
+        R = self.mesh._radius
         Omega = self.params.Omega
         fexpr = 2*Omega*x[2]/R
         V = FunctionSpace(self.mesh, "CG", 1)
@@ -95,7 +95,7 @@ class SetupShallowWater(object):
     def w2(self):
         self.params = ShallowWaterParameters(H=2996.942)
         x = SpatialCoordinate(self.mesh)
-        R = self.mesh._icosahedral_sphere
+        R = self.mesh._radius
         Omega = self.params.Omega
         fexpr = 2*Omega*x[2]/R
         V = FunctionSpace(self.mesh, "CG", 1)
