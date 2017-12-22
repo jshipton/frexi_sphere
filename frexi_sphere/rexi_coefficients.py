@@ -89,6 +89,7 @@ def b_coefficients(h, M, n=0):
         print("n must be 0, 1 or 2")
 
 def RexiCoefficients(h, M, n=0, reduce_to_half=False):
+    print("Computing Rexi coefficients.")
     params = REXIParameters()
     L = params.L
     mu = params.mu
@@ -119,4 +120,5 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
             beta_re[i] *= 2.0
             beta_im[i] *= 2.0
 
+        print("Done.")
     return alpha, beta_re, beta_im
