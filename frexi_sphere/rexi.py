@@ -1,8 +1,9 @@
 from firedrake import *
+import numpy as np
 
 class Rexi(object):
 
-    def __init__(self, setup, direct_solve, rexi_coefficients):
+    def __init__(self, setup, direct_solve, rexi_coefficients, repeat_rate=4):
 
         alpha, beta_re = rexi_coefficients
         self.alpha = alpha
@@ -39,13 +40,10 @@ class Rexi(object):
             lu_parameters = {'ksp_type':'preonly',
                              'pc_type':'lu'}
 
-            gamg_parameters = {'ksp_type':'richardson',
-                               'pc_type':'gamg',
-                               'mg_levels_pc_type':'bjacobi',
-                               'mg_levels_sub_pc_type':'sor',
-                               'ksp_max_it':4,
+            gamg_parameters = {'pc_type':'gamg',
+                               "mg_levels_ksp_max_it": 4,
                                'ksp_reuse_preconditioner':True}
-
+            
             hybridisation_parameters = {'ksp_type': 'preonly',
                                         'pc_type': 'python',
                                         'pc_python_type': 'firedrake.HybridizationPC',
@@ -58,9 +56,16 @@ class Rexi(object):
                                  "pc_fieldsplit_type": "multiplicative",
                                  "pc_fieldsplit_off_diag_use_amat": True,
                                  "pc_fieldsplit_0_fields": "0,1",
-                                 "pc_fieldsplit_1_fields": "2,3",
-                                 "fieldsplit_0": hybridisation_parameters,
-                                 "fieldsplit_1": hybridisation_parameters}
+                                 "pc_fieldsplit_1_fields": "2,3"}
+
+            hybridisation = False
+            if hybridisation:
+                solver_parameters["fieldsplit_0"] = hybridisation_parameters
+                solver_parameters["fieldsplit_1"] = hybridisation_parameters
+            else:
+                solver_parameters["pmat_type"] = "aij"
+                solver_parameters["fieldsplit_0"] = lu_parameters
+                solver_parameters["fieldsplit_1"] = lu_parameters
             # For reusing solver with different A, but same aP.
             solver_parameters["ksp_reuse_preconditioner"] = True
 
@@ -78,19 +83,25 @@ class Rexi(object):
 
         nalpha = len(alpha)
         # indices to make solvers with
-        
+
         # This is where we set how many solvers we'd like and which
         # values to use: would be nice to handle this through the options.
-        alpha_is = [nalpha//3, 2*(nalpha//3), nalpha-1]
+
+        alpha_is = np.arange(nalpha//repeat_rate)*repeat_rate
+        assert(alpha_is.max()<nalpha)
+        self.solver_list = []
+        for ni in range(nalpha):
+            val = ni//repeat_rate
+            self.solver_list.append(ni//(repeat_rate))
+        print(alpha_is)
+        print(self.solver_list)
+        assert(len(self.solver_list) == len(alpha))
+
         ar0 = []
         ai0 = []
         for l in range(len(alpha_is)):
             ar0.append(Constant(alpha[alpha_is[l]].real))
             ai0.append(Constant(alpha[alpha_is[l]].imag))
-            
-        # indices to select which solvers to use for each coefficient
-        self.solver_list = [0]*(nalpha//3) + [1]*(nalpha//3) + [2]*(nalpha-2*(nalpha//3))
-        assert(len(self.solver_list) == len(alpha))
         
         self.ai = Constant(alpha[0].imag)
         self.bi = Constant(beta_re[0].imag)
