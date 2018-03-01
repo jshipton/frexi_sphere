@@ -20,7 +20,7 @@ class Timestepping(object):
         diagnostics_list = ['max', 'min', 'l2']
         self.diagnostics_dict = {name: getattr(self.diagnostics, name) for name in diagnostics_list}
         self.diagnostics_data = {}
-        for name, field in self.field_dict.iteritems():
+        for name, field in self.field_dict.items():
             self.diagnostics_data[name] = {}
             for diagnostic in diagnostics_list:
                 self.diagnostics_data[name][diagnostic] = []
@@ -58,8 +58,8 @@ class Timestepping(object):
         self.outfile.write(*self.fields)
 
         # save initial diagnostics
-        for fname, field in self.field_dict.iteritems():
-            for dname, diagnostic in self.diagnostics_dict.iteritems():
+        for fname, field in self.field_dict.items():
+            for dname, diagnostic in self.diagnostics_dict.items():
                 self.diagnostics_data[fname][dname].append(diagnostic(field))
 
         max_courant = self.diagnostics.max_courant_number(u0, dt)
@@ -84,8 +84,8 @@ class Timestepping(object):
             self.outfile.write(*self.fields)
             t += dt
 
-            for fname, field in self.field_dict.iteritems():
-                for dname, diagnostic in self.diagnostics_dict.iteritems():
+            for fname, field in self.field_dict.items():
+                for dname, diagnostic in self.diagnostics_dict.items():
                     self.diagnostics_data[fname][dname].append(diagnostic(field))
             max_courant = self.diagnostics.max_courant_number(u0, dt)
             energy = self.diagnostics.energy(h0, u0, self.params.g)
