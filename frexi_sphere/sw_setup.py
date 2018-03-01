@@ -95,7 +95,7 @@ class SetupShallowWater(object):
     def w2(self):
         self.params = ShallowWaterParameters(H=2996.942)
         x = SpatialCoordinate(self.mesh)
-        R = self.mesh._icosahedral_sphere
+        R = self.mesh._radius
         Omega = self.params.Omega
         fexpr = 2*Omega*x[2]/R
         V = FunctionSpace(self.mesh, "CG", 1)
