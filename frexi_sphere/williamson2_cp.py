@@ -28,10 +28,13 @@ h0 = Function(V2,name="h").assign(setup.h0)
 
 # setup parameters for REXI
 h = 0.2
-M = 64
+M = 32
 
 # make timestepper
-timestepper = CoarsePropagator(setup, dt, True, h, M, True, 1./dt, 100.)
+direct = False
+hybridisation = True
+reduce_to_half = True
+timestepper = CoarsePropagator(setup, dt, direct, hybridisation, h, M, reduce_to_half, 10*dt, 10.)
 
 # output file and output fields
 dirname = 'CP_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)

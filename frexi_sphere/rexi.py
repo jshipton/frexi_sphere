@@ -3,7 +3,7 @@ import numpy as np
 
 class Rexi(object):
 
-    def __init__(self, setup, direct_solve, rexi_coefficients, repeat_rate=4):
+    def __init__(self, setup, direct_solve, rexi_coefficients, hybridisation=True, repeat_rate=4):
 
         alpha, beta_re = rexi_coefficients
         self.alpha = alpha
@@ -58,7 +58,6 @@ class Rexi(object):
                                  "pc_fieldsplit_0_fields": "0,1",
                                  "pc_fieldsplit_1_fields": "2,3"}
 
-            hybridisation = False
             if hybridisation:
                 solver_parameters["fieldsplit_0"] = hybridisation_parameters
                 solver_parameters["fieldsplit_1"] = hybridisation_parameters

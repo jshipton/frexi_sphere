@@ -10,10 +10,10 @@ class LinearExponentialIntegrator(object):
     shallow water equations.
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, M, reduce_to_half):
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
         self.coefficients = alpha, beta_re
-        self.rexi = Rexi(setup, direct_solve, self.coefficients)
+        self.rexi = Rexi(setup, direct_solve, self.coefficients, hybridisation)
 
     def apply(self, dt, u_in, h_in, u_out, h_out):
         w = self.rexi.solve(u_in, h_in, dt)
@@ -29,8 +29,8 @@ class NonlinearExponentialIntegrator(LinearExponentialIntegrator):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half, nonlinear=True):
-        super(NonlinearExponentialIntegrator, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, M, reduce_to_half, nonlinear=True):
+        super(NonlinearExponentialIntegrator, self).__init__(setup, dt, direct_solve, hybridisation, h, M, reduce_to_half)
         self.dt = dt
         H = Constant(setup.params.H)
         V1 = setup.spaces['u']
@@ -91,8 +91,8 @@ class ETD1(NonlinearExponentialIntegrator):
     Differencing (ETD) method described in equation 4 of 
     Cox and Matthews 2002.
     """
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        super(ETD1, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, M, reduce_to_half):
+        super(ETD1, self).__init__(setup, dt, direct_solve, hybridisation, h, M, reduce_to_half)
         alpha, beta_re, beta_im = RexiCoefficients(h, M, 1, reduce_to_half)
         self.phi1_coefficients = alpha, beta_re
 
@@ -123,8 +123,8 @@ class ETD2RK(ETD1):
     U_{n+1} = A_n + dt phi_2(dt L)(N(A_n) - N(U_n))
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        super(ETD2RK, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, M, reduce_to_half):
+        super(ETD2RK, self).__init__(setup, dt, direct_solve, hybridisation, h, M, reduce_to_half)
         self.Nu = Function(setup.spaces["u"])
         self.Nh = Function(setup.spaces["h"])
         self.au = Function(setup.spaces["u"])
@@ -164,8 +164,8 @@ class SSPRK2V(NonlinearExponentialIntegrator):
     u^{n+1} = exp(dtL)u^n + dt/2(exp(dtL)N(u^n) + N(exp(dtL)u*))
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        super(SSPRK2V, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, M, reduce_to_half):
+        super(SSPRK2V, self).__init__(setup, dt, direct_solve, hybridisation, h, M, reduce_to_half)
         self.ustar = Function(setup.spaces["u"])
         self.hstar = Function(setup.spaces["h"])
         self.u1 = Function(setup.spaces["u"])
@@ -183,15 +183,15 @@ class SSPRK2V(NonlinearExponentialIntegrator):
         self.hstar = h_in + dt*Nh
 
         # calculate exp(dtL)U^n
-        super(SSPRK2V, self).apply(dt,u_in, h_in, u_out, h_out)
+        super(SSPRK2V, self).apply(dt, u_in, h_in, u_out, h_out)
 
         # calculate exp(dtL)N(u^n)
-        super(SSPRK2V, self).apply(dt,Nu, Nh, self.u1, self.h1)
+        super(SSPRK2V, self).apply(dt, Nu, Nh, self.u1, self.h1)
         u_out += 0.5*dt*self.u1
         h_out += 0.5*dt*self.h1
 
         # calculate N(exp(dtL)u*)
-        super(SSPRK2V, self).apply(dt,self.ustar, self.hstar, self.u1, self.h1)
+        super(SSPRK2V, self).apply(dt, self.ustar, self.hstar, self.u1, self.h1)
         self.u0.assign(self.u1)
         self.h0.assign(self.h1)
         self.nonlinear_solver.solve()
@@ -209,8 +209,8 @@ class ETDRK4V(NonlinearExponentialIntegrator):
               + N(u3))
     """
 
-    def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        super(ETDRK4V, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, M, reduce_to_half):
+        super(ETDRK4V, self).__init__(setup, dt, direct_solve, hybridisation, h, M, reduce_to_half)
         self.u1 = Function(setup.spaces["u"])
         self.h1 = Function(setup.spaces["h"])
         self.u2 = Function(setup.spaces["u"])
@@ -272,8 +272,8 @@ class ETDRK4V(NonlinearExponentialIntegrator):
 
 class CoarsePropagator(NonlinearExponentialIntegrator):
 
-    def __init__(self, setup, dt, direct_solve, h, rexiM, reduce_to_half, T, M, nonlinear=True):
-        super(CoarsePropagator, self).__init__(setup, dt, direct_solve, h, rexiM, reduce_to_half, nonlinear)
+    def __init__(self, setup, dt, direct_solve, hybridisation, h, rexiM, reduce_to_half, T, M, nonlinear=True):
+        super(CoarsePropagator, self).__init__(setup, dt, direct_solve, hybridisation, h, rexiM, reduce_to_half, nonlinear)
         self.sn = np.arange(0.5*T/M, T, T/M)
         self.T = T
         self.u1 = Function(setup.spaces["u"])
@@ -299,6 +299,7 @@ class CoarsePropagator(NonlinearExponentialIntegrator):
 
         # stage 1 of midpoint method
         for i, s in enumerate(self.sn):
+            print("stage 1", i, len(self.sn))
             super(CoarsePropagator, self).apply(s, u0, h0, self.u_tmp, self.h_tmp)
             self.u0.assign(self.u_tmp)
             self.h0.assign(self.h_tmp)
@@ -310,6 +311,7 @@ class CoarsePropagator(NonlinearExponentialIntegrator):
 
         # stage 2 of midpoint method
         for i, s in enumerate(self.sn):
+            print("stage 2", i, len(self.sn))
             super(CoarsePropagator, self).apply(s, self.u1, self.h1, self.u_tmp, self.h_tmp)
             self.u0.assign(self.u_tmp)
             self.h0.assign(self.h_tmp)

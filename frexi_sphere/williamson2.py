@@ -13,7 +13,7 @@ global_normal = Expression(("x[0]", "x[1]", "x[2]"))
 mesh.init_cell_orientations(global_normal)
 
 # setup parameters for timestepping
-tmax = 5*24.*60.*60.
+tmax = 24.*60.*60.
 dt = 1500.
 
 degree = 1
@@ -31,8 +31,10 @@ h = 0.2
 M = 64
 
 # make timestepper
-direct = True
-timestepper = SSPRK2V(setup, dt, direct, h, M, False)
+direct = False
+hybridisation = True
+reduce_to_half = True
+timestepper = SSPRK2V(setup, dt, direct, hybridisation, h, M, reduce_to_half)
 
 # output file and output fields
 dirname = 'SSPRK2V_w2_deg%s_dt%s_h%s_M%s' % (degree, dt, h, M)

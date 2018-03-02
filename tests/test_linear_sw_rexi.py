@@ -5,7 +5,7 @@ from frexi_sphere.sw_setup import SetupShallowWater
 import pytest
 
 
-def run(dirname, prob, direct_solve, reduce_to_half=True):
+def run(dirname, prob, direct_solve, hybridisation, reduce_to_half):
     family = "BDM"
     degree = 0
     n = 64
@@ -29,6 +29,7 @@ def run(dirname, prob, direct_solve, reduce_to_half=True):
     im_h = im.h_end
     im_u = im.u_end
     r = LinearExponentialIntegrator(setup, t, direct_solve=direct_solve,
+                                    hybridisation=hybridisation,
                                     h=h, M=M, reduce_to_half=reduce_to_half)
     r.apply(t, u0, h0, rexi_u, rexi_h)
     h_err = sqrt(assemble((rexi_h - im_h)*(rexi_h - im_h)*dx))/sqrt(assemble(im_h*im_h*dx))
@@ -37,10 +38,14 @@ def run(dirname, prob, direct_solve, reduce_to_half=True):
 
 @pytest.mark.parametrize("problem", ["wave_scenario", "gaussian_scenario"])
 @pytest.mark.parametrize("direct_solve", [True, False])
-def test_linear_sw_rexi(tmpdir, problem, direct_solve):
+@pytest.mark.parametrize("hybridisation", [True, False])
+@pytest.mark.parametrize("reduce_to_half", [True, False])
+def test_linear_sw_rexi(tmpdir, problem, direct_solve, hybridisation, reduce_to_half):
     if direct_solve:
         pytest.skip("Direct solve option currently not working")
+    if not reduce_to_half:
+        pytest.skip("reduce_to_half = False option currently not working")
     dirname = str(tmpdir)
-    h_err, u_err = run(dirname, problem, direct_solve)
+    h_err, u_err = run(dirname, problem, direct_solve, hybridisation, reduce_to_half)
     assert h_err < 0.01
     assert u_err < 0.006

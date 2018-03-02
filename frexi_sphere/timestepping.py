@@ -42,9 +42,11 @@ class Timestepping(object):
             u_init = Function(V1,name="u_init").assign(u0)
             u_err = Function(V1,name="u_err")
             self.field_dict['u_err'] = u_err
+            self.fields.append(u_err)
             h_init = Function(V2,name="h_init").assign(h0)
             h_err = Function(V2,name="h_err")
             self.field_dict['h_err'] = h_err
+            self.fields.append(h_err)
 
         # setup diagnostics
         self.setup_diagnostics()
