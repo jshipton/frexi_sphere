@@ -89,6 +89,16 @@ def b_coefficients(h, M, n=0):
         print("n must be 0, 1 or 2")
 
 def RexiCoefficients(h, M, n=0, reduce_to_half=False):
+
+    sys.path.append('../frexi_sphere/faf')
+    from REXI import REXI
+    sys.path.pop()
+
+
+    rexi = REXI(N=M, h=h, reduce_to_half, reduce_to_half)
+    return rexi.alpha, rexi.beta
+
+    """
     print("Computing Rexi coefficients.")
     params = REXIParameters()
     L = params.L
@@ -122,3 +132,4 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
 
         print("Done.")
     return alpha, beta_re, beta_im
+    """
