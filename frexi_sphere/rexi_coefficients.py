@@ -97,9 +97,10 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
     b = b_coefficients(h, M, n)
     N = M + L
 
-    alpha = [0 for i in range(0, 2*N+1)]
-    beta_re = [0 for i in range(0, 2*N+1)]
-    beta_im = [0 for i in range(0, 2*N+1)]
+    import numpy
+    alpha = numpy.zeros((2*N+1,), dtype=numpy.complex64)
+    beta_re = numpy.zeros((2*N+1,), dtype=numpy.complex64)
+    beta_im = numpy.zeros((2*N+1,), dtype=numpy.complex64)
 
     for l in range(-L, L+1):
         for m in range(-M, M+1):
@@ -120,5 +121,8 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
             beta_re[i] *= 2.0
             beta_im[i] *= 2.0
 
-        print("Done.")
-    return alpha, beta_re, beta_im
+    beta = numpy.concatenate((beta_re + 1j*beta_im,
+                              -beta_re + 1j*beta_im))
+    alpha = numpy.concatenate((alpha, -alpha))
+
+    return alpha, beta
