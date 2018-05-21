@@ -5,9 +5,7 @@ import pytest
 import sys
 import traceback
 
-sys.path.append('../frexi_sphere/faf')
-from REXI import REXI
-sys.path.pop()
+from frexi_sphere.faf import REXI, FAFCoefficients
 
 params = REXIParameters()
 mu = params.mu
@@ -135,7 +133,7 @@ def test_rexi_phi_approx(n):
             print("halve: "+str(halve))
             print("merge: "+str(merge))
 
-            rexi = REXI(N=M, h=h, reduce_to_half=halve, merge=merge)
+            rexi = REXI.REXI(N=M, h=h, reduce_to_half=halve, merge=merge)
             # Coefficients are now available in
             # rexi.alpha
             #   and

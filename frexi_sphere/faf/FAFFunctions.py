@@ -7,8 +7,8 @@
 #
 
 import sys
-import EFloat as ef
-from FAFCoefficients import *
+from ..faf import EFloat as ef
+from ..faf.FAFCoefficients import *
 
 
 

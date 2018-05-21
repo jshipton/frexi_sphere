@@ -9,9 +9,9 @@
 import sys
 import math
 import cmath
-from FAFCoefficients import *
-from REXIGaussianPhi0 import *
-import EFloat as ef
+from ..faf.FAFCoefficients import *
+from ..faf.REXIGaussianPhi0 import *
+from ..faf import EFloat as ef
 import traceback
 import numpy
 

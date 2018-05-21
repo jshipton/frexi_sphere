@@ -95,7 +95,7 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
     sys.path.pop()
 
 
-    rexi = REXI(N=M, h=h, reduce_to_half, reduce_to_half)
+    rexi = REXI(M, h, reduce_to_half, reduce_to_half)
     return rexi.alpha, rexi.beta
 
     """

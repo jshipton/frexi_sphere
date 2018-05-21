@@ -9,7 +9,7 @@
 import sys
 import os
 import copy
-import EFloat as ef
+from ..faf import EFloat as ef
 import inspect
 
 
