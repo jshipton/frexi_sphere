@@ -4,7 +4,7 @@ import numpy
 
 h = 0.1
 M = 128
-alpha, beta_re, beta_im = RexiCoefficients(h, M)
+alpha, beta_re = RexiCoefficients(h, M)
 
 xmax = h*M
 
@@ -16,7 +16,7 @@ for m, x in enumerate(xs):
     sum = 0.
     for n in range(len(alpha)):
         denom = (1j*x + alpha[n]);
-        sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
+        sum += beta[n] / denom
     Gs[m] = abs(sum)
         
 import pylab

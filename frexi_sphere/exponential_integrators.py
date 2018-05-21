@@ -11,8 +11,8 @@ class LinearExponentialIntegrator(object):
     """
 
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
-        alpha, beta_re, beta_im = RexiCoefficients(h, M, 0, reduce_to_half)
-        self.coefficients = alpha, beta_re
+        alpha, beta = RexiCoefficients(h, M, 0, reduce_to_half)
+        self.coefficients = alpha, beta
         self.rexi = Rexi(setup, direct_solve, self.coefficients)
 
     def apply(self, dt, u_in, h_in, u_out, h_out):
@@ -93,8 +93,8 @@ class ETD1(NonlinearExponentialIntegrator):
     """
     def __init__(self, setup, dt, direct_solve, h, M, reduce_to_half):
         super(ETD1, self).__init__(setup, dt, direct_solve, h, M, reduce_to_half)
-        alpha, beta_re, beta_im = RexiCoefficients(h, M, 1, reduce_to_half)
-        self.phi1_coefficients = alpha, beta_re
+        alpha, beta = RexiCoefficients(h, M, 1, reduce_to_half)
+        self.phi1_coefficients = alpha, beta
 
     def apply(self, dt, u_in, h_in, u_out, h_out):
 

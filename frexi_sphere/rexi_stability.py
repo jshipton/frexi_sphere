@@ -6,7 +6,7 @@ h = 0.2
 M = 64
 
 # load coefficients *WITHOUT* reduction to the half
-alpha, beta_re, beta_im = RexiCoefficients(h, M, False)
+alpha, beta = RexiCoefficients(h, M, False)
 
 xmax = 2.0
 #ymax = 150.0
@@ -38,7 +38,7 @@ for m, x in enumerate(zz):
     # compute REXI SUM
     for n in range(len(alpha)):
         denom = (x + alpha[n]);
-        sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
+        sum += beta[n] / denom
 
     # Check for stability and add if stable
     if abs(sum) <= 1.0:
