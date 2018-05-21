@@ -15,10 +15,10 @@ def approx_e_ix(x, h, M, use_Gaussian_approx):
         for m in range(-M, M+1):
             sum += b[m+M] * approxGaussian(x+float(m)*h, h)
     else:
-        alpha, beta_re, beta_im = RexiCoefficients(h, M)
+        alpha, beta = RexiCoefficients(h, M)
         for n in range(len(alpha)):
             denom = (1j*x + alpha[n]);
-            sum += (beta_re[n] / denom).real + 1j*(beta_im[n] / denom).real
+            sum += beta / denom
 
     return sum
 
