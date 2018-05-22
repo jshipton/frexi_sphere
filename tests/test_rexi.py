@@ -15,7 +15,7 @@ def approx_e_ix(x, h, M, use_Gaussian_approx):
         for m in range(-M, M+1):
             sum += b[m+M] * approxGaussian(x+m*h, h)
     else:
-        alpha, beta = RexiCoefficients(h, M, True)
+        alpha, beta = RexiCoefficients(h, M, False)
         for n in range(len(alpha)):
             denom = (1j*x + alpha[n]);
             sum += beta[n] / denom
@@ -64,7 +64,6 @@ def test_exponential_approx():
     for x in range(-int(h*M)+1, int(h*M)):
         exact = exp(1j*x)
         approx = approx_e_ix(x, h, M, True)
-        print(exact,approx)
         assert abs(exact - approx) < 2.e-11
 
 
@@ -82,9 +81,7 @@ def test_rexi_exponential_approx():
     for x in range(-int(h*M)+1, int(h*M)):
         exact = exp(1j*x)
         approx = approx_e_ix(x, h, M, False)
-        print(exact)
-        print(approx)
-        assert abs(exact - approx) < 2.e-11
+        assert abs(exact - approx) < 1.e-6
 
 @pytest.mark.parametrize("n", [1, 2])
 def test_rexi_phi_approx(n):
@@ -93,5 +90,4 @@ def test_rexi_phi_approx(n):
     for x in range(-191, 192, 10):
         exact = exact_phi(n, x)
         approx = approx_phi(x, h, M, n)
-        print(x, exact, approx, abs(exact - approx))
         assert abs(exact - approx) < 2.e-13
