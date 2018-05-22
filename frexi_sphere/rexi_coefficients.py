@@ -9,6 +9,7 @@
 
 import math
 import cmath
+import numpy
 
 #
 # This class provides the weights and coefficients for the
@@ -60,7 +61,8 @@ class REXIParameters(object):
 
 def b_coefficients(h, M, n=0):
     if n == 0:
-        return [math.exp(h*h)*cmath.exp(-1j*(float(m)*h)) for m in range(-M, M+1)]
+        m = numpy.arange(-M,M+1, dtype=numpy.complex128)
+        return numpy.exp(h*h, dtype=numpy.complex128)*numpy.exp(-1j*m*h, dtype=numpy.complex128)
     elif n == 1:
         from scipy import pi, cos, sin, exp, integrate
         def expr_real(xi):
@@ -122,7 +124,7 @@ def RexiCoefficients(h, M, n=0, reduce_to_half=False):
             beta_im[i] *= 2.0
 
     beta = numpy.concatenate((beta_re + 1j*beta_im,
-                              -beta_re + 1j*beta_im))
+                              -beta_re + 1j*beta_im))/2
     alpha = numpy.concatenate((alpha, -alpha))
 
     return alpha, beta
